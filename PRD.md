@@ -3,6 +3,12 @@
 ## 1. TL;DR
 PersonalFlow is a dockerized web application that enables individual users to track personal and work projects, ideas, and tasks through a modern, intuitive interface. Built for local deployment with persistent storage, it serves as both a user-friendly task management system and a data source for other local applications via REST API integration.
 
+### Tech Stack
+**Backend**: .NET 9 (C#) with ASP.NET Core, Entity Framework Core, SQLite
+**Frontend**: React 18 + TypeScript, Vite, TanStack React Query, Tailwind CSS, shadcn/ui
+**Deployment**: Docker & Docker Compose with volume persistence
+**API**: RESTful architecture with comprehensive CRUD endpoints
+
 ## 2. Goals
 ### Business Goals
 * Create a self-hosted solution that eliminates dependency on external task management services
@@ -29,24 +35,31 @@ PersonalFlow is a dockerized web application that enables individual users to tr
 * As a privacy-conscious user, I need local data storage so my personal and professional information stays under my control
 
 ## 4. Functional requirements
-### Core Features (P0)
-* Project creation and management with markdown support for descriptions
-* Task creation, editing, and organization within projects
-* Visual progress tracking with sliding bar and status indicators (Not Started, In Progress, Completed, Blocked)
-* Ideas capture and linking to specific projects
-* REST API endpoints for all CRUD operations
+### Core Features (P0) - ✅ IMPLEMENTED
+* ✅ Project creation and management with markdown support for descriptions
+* ✅ Task creation, editing, and organization within projects
+* ✅ Visual progress tracking with progress bars and status indicators (Not Started, In Progress, Completed, Blocked)
+* ✅ Ideas capture and linking to specific projects
+* ✅ REST API endpoints for all CRUD operations (Projects, Tasks, Ideas, Search)
+* ✅ Delete project functionality with confirmation dialog
+* ✅ Inline editing for tasks and ideas (editable text component)
+* ✅ Task progress tracking with slider component
+* ✅ Priority levels for tasks
+* ✅ Status badges and visual indicators
+* ✅ Dashboard with project overview cards showing task counts, completion metrics, and ideas
 
-### Enhanced Features (P1)
-* Search and filtering across projects, tasks, and ideas
-* Due date management and basic scheduling
-* Export functionality for projects and tasks
-* Responsive design for various screen sizes
+### Enhanced Features (P1) - 🚧 IN PROGRESS
+* ✅ Search functionality across projects, tasks, and ideas (API implemented)
+* ✅ Responsive design with modern UI components (React + Tailwind CSS + shadcn/ui)
+* 🚧 Due date management and basic scheduling (model supports it, UI pending)
+* ⏳ Export functionality for projects and tasks (pending)
+* ⏳ Advanced filtering UI (pending)
 
-### Nice-to-Have Features (P2)
-* Task templates for recurring work patterns
-* Basic reporting and analytics dashboard
-* Bulk operations for task management
-* Dark/light theme toggle
+### Nice-to-Have Features (P2) - ⏳ PLANNED
+* ⏳ Task templates for recurring work patterns
+* ⏳ Basic reporting and analytics dashboard
+* ⏳ Bulk operations for task management
+* ⏳ Dark/light theme toggle
 
 ## 5. User experience
 ### Primary User Journey
@@ -76,20 +89,96 @@ Sarah starts her morning by navigating to localhost:3000 where PersonalFlow load
 * Zero data loss incidents during container operations
 
 ## 8. Milestones & sequencing
-### Phase 1: MVP Foundation (4-6 weeks)
-* Docker containerization with volume persistence
-* Basic web interface for projects and tasks
-* Core CRUD operations and simple progress tracking
-* Essential API endpoints
+### Phase 1: MVP Foundation - ✅ COMPLETED
+* ✅ Docker containerization with volume persistence
+* ✅ Modern React frontend with TypeScript and Vite
+* ✅ .NET 9 backend with Entity Framework Core
+* ✅ SQLite database with migrations
+* ✅ Core CRUD operations for projects, tasks, and ideas
+* ✅ Essential API endpoints (ProjectsController, TasksController, IdeasController, SearchController)
+* ✅ Service layer architecture (IProjectService, ITaskService, IIdeaService)
 
-### Phase 2: Enhanced UX (3-4 weeks)
-* Visual progress bars and status management
-* Ideas capture and project linking
-* Search and filtering capabilities
-* Responsive design implementation
+### Phase 2: Enhanced UX - ✅ COMPLETED
+* ✅ Visual progress bars and status management with sliding bar
+* ✅ Ideas capture and project linking
+* ✅ Search API implementation
+* ✅ Responsive design with Tailwind CSS and shadcn/ui components
+* ✅ Dashboard with project cards showing metrics
+* ✅ Project detail pages with tabs for tasks and ideas
+* ✅ Inline editing functionality (EditableText component)
+* ✅ Delete project with confirmation dialog
+* ✅ Task and idea lists with real-time updates (React Query)
+* ✅ Markdown rendering for project descriptions
 
-### Phase 3: Polish & Integration (2-3 weeks)
-* Complete API documentation
-* Error handling and edge case management
-* Performance optimization
-* Basic export functionality 
+### Phase 3: Polish & Integration - 🚧 IN PROGRESS
+* ✅ React Query for data fetching and caching
+* ✅ Modern UI components library (Radix UI primitives)
+* ✅ Type-safe API client with TypeScript
+* ✅ Complete API documentation (pending)
+* ⏳ Error handling and edge case management (partial)
+* ⏳ Performance optimization (ongoing)
+* ⏳ Export functionality (pending)
+* ⏳ Due date UI implementation (pending)
+
+### Phase 4: Advanced Features - ⏳ PLANNED
+* ⏳ Task templates
+* ⏳ Analytics dashboard
+* ⏳ Bulk operations
+* ⏳ Theme toggle
+
+## 9. Technical Implementation Summary
+
+### Backend Architecture
+* **Framework**: ASP.NET Core 9 with C#
+* **Database**: SQLite with Entity Framework Core
+* **API Pattern**: RESTful services with controller → service → repository pattern
+* **Controllers**: ProjectsController, TasksController, IdeasController, SearchController
+* **Services**: IProjectService, ITaskService, IIdeaService with concrete implementations
+* **Models**: Project, ProjectTask, Idea with DTOs for API contracts
+* **Database Context**: TaskTrackerDbContext with initial migration
+
+### Frontend Architecture
+* **Framework**: React 18 with TypeScript
+* **Build Tool**: Vite
+* **Routing**: React Router v6
+* **State Management**: TanStack React Query for server state
+* **Styling**: Tailwind CSS v3
+* **UI Components**: shadcn/ui (Radix UI primitives)
+* **HTTP Client**: Axios
+* **Markdown**: react-markdown for rich text rendering
+
+### Key Components Implemented
+* **Layout**: Main application layout with navigation
+* **Dashboard**: Project overview with cards, progress indicators, and metrics
+* **ProjectDetail**: Detailed project view with tasks and ideas tabs
+* **TaskList**: Task management with inline editing and progress tracking
+* **IdeaList**: Idea capture with inline editing
+* **CreateProjectDialog**: Modal for creating new projects
+* **CreateTaskDialog**: Modal for creating tasks with status, priority, and progress
+* **CreateIdeaDialog**: Modal for capturing ideas
+* **DeleteProjectDialog**: Confirmation dialog for project deletion
+* **EditableText**: Reusable inline editing component for text fields
+
+### API Endpoints Implemented
+* `GET /api/projects` - List all projects with metrics
+* `GET /api/projects/{id}` - Get project details with tasks and ideas
+* `POST /api/projects` - Create new project
+* `PUT /api/projects/{id}` - Update project
+* `DELETE /api/projects/{id}` - Delete project
+* `GET /api/tasks` - List all tasks
+* `GET /api/tasks?projectId={id}` - Filter tasks by project
+* `POST /api/tasks` - Create task
+* `PUT /api/tasks/{id}` - Update task
+* `DELETE /api/tasks/{id}` - Delete task
+* `GET /api/ideas` - List all ideas
+* `GET /api/ideas?projectId={id}` - Filter ideas by project
+* `POST /api/ideas` - Create idea
+* `PUT /api/ideas/{id}` - Update idea
+* `DELETE /api/ideas/{id}` - Delete idea
+* `GET /api/search?q={query}` - Search across all entities
+
+### Docker Configuration
+* Multi-stage Dockerfile for optimized .NET builds
+* Docker Compose for orchestration with volume persistence
+* SQLite database persisted in Docker volume
+* Frontend served via static files or separate container 
