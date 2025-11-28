@@ -1,7 +1,7 @@
 import { useParams, Link } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { projectsApi } from '@/api/projects'
-import { ArrowLeft, Plus } from 'lucide-react'
+import { ArrowLeft, Plus, Trash2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
@@ -12,12 +12,14 @@ import { IdeaList } from '@/components/IdeaList'
 import { useState } from 'react'
 import { CreateTaskDialog } from '@/components/CreateTaskDialog'
 import { CreateIdeaDialog } from '@/components/CreateIdeaDialog'
+import { DeleteProjectDialog } from '@/components/DeleteProjectDialog'
 import ReactMarkdown from 'react-markdown'
 
 export default function ProjectDetail() {
   const { id } = useParams<{ id: string }>()
   const [showCreateTask, setShowCreateTask] = useState(false)
   const [showCreateIdea, setShowCreateIdea] = useState(false)
+  const [showDeleteProject, setShowDeleteProject] = useState(false)
 
   const { data: project, isLoading } = useQuery({
     queryKey: ['projects', id],
@@ -63,6 +65,14 @@ export default function ProjectDetail() {
               </div>
             )}
           </div>
+          <Button
+            variant="destructive"
+            size="sm"
+            onClick={() => setShowDeleteProject(true)}
+          >
+            <Trash2 className="h-4 w-4 mr-1" />
+            Delete Project
+          </Button>
         </div>
       </div>
 
@@ -126,6 +136,15 @@ export default function ProjectDetail() {
         open={showCreateIdea}
         onOpenChange={setShowCreateIdea}
         projectId={project.id}
+      />
+
+      <DeleteProjectDialog
+        open={showDeleteProject}
+        onOpenChange={setShowDeleteProject}
+        projectId={project.id}
+        projectTitle={project.title}
+        taskCount={project.taskCount}
+        ideaCount={project.ideaCount}
       />
     </div>
   )
