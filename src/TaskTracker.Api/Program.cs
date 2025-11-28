@@ -19,6 +19,9 @@ builder.Services.AddScoped<ITaskService, TaskService>();
 builder.Services.AddScoped<IIdeaService, IdeaService>();
 builder.Services.AddScoped<ISearchService, SearchService>();
 
+// Register HttpClient for TTS proxy
+builder.Services.AddHttpClient();
+
 // Configure CORS for React frontend
 builder.Services.AddCors(options =>
 {

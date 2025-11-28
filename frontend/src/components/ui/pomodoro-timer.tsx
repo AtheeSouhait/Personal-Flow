@@ -59,8 +59,8 @@ export function PomodoroTimer({
 
   const playCompletionSound = async () => {
     try {
-      // Try to call the TTS service
-      const response = await fetch('http://localhost:8080/synthesize', {
+      // Call the TTS service via our API proxy
+      const response = await fetch('/api/tts/synthesize', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -69,7 +69,7 @@ export function PomodoroTimer({
           text: "Good job, it's time to take a 5 minutes break!",
           voiceStyle: 'F2',
         }),
-        signal: AbortSignal.timeout(5000), // 5 second timeout
+        signal: AbortSignal.timeout(10000), // 10 second timeout
       })
 
       if (response.ok) {
