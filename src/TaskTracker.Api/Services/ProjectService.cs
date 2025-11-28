@@ -1,0 +1,153 @@
+using Microsoft.EntityFrameworkCore;
+using TaskTracker.Api.Data;
+using TaskTracker.Api.Models;
+using TaskTracker.Api.Models.DTOs;
+
+namespace TaskTracker.Api.Services;
+
+public class ProjectService : IProjectService
+{
+    private readonly TaskTrackerDbContext _context;
+
+    public ProjectService(TaskTrackerDbContext context)
+    {
+        _context = context;
+    }
+
+    public async Task<IEnumerable<ProjectDto>> GetAllProjectsAsync()
+    {
+        var projects = await _context.Projects
+            .Include(p => p.Tasks)
+            .Include(p => p.Ideas)
+            .OrderByDescending(p => p.UpdatedAt)
+            .ToListAsync();
+
+        return projects.Select(MapToDto);
+    }
+
+    public async Task<ProjectDetailDto?> GetProjectByIdAsync(int id)
+    {
+        var project = await _context.Projects
+            .Include(p => p.Tasks)
+            .Include(p => p.Ideas)
+            .FirstOrDefaultAsync(p => p.Id == id);
+
+        return project == null ? null : MapToDetailDto(project);
+    }
+
+    public async Task<ProjectDetailDto> CreateProjectAsync(CreateProjectDto createDto)
+    {
+        var project = new Project
+        {
+            Title = createDto.Title,
+            Description = createDto.Description,
+            CreatedAt = DateTime.UtcNow,
+            UpdatedAt = DateTime.UtcNow
+        };
+
+        _context.Projects.Add(project);
+        await _context.SaveChangesAsync();
+
+        return MapToDetailDto(project);
+    }
+
+    public async Task<ProjectDetailDto?> UpdateProjectAsync(int id, UpdateProjectDto updateDto)
+    {
+        var project = await _context.Projects
+            .Include(p => p.Tasks)
+            .Include(p => p.Ideas)
+            .FirstOrDefaultAsync(p => p.Id == id);
+
+        if (project == null)
+            return null;
+
+        if (updateDto.Title != null)
+            project.Title = updateDto.Title;
+
+        if (updateDto.Description != null)
+            project.Description = updateDto.Description;
+
+        if (updateDto.Status != null && Enum.TryParse<ProjectStatus>(updateDto.Status, out var status))
+            project.Status = status;
+
+        project.UpdatedAt = DateTime.UtcNow;
+
+        await _context.SaveChangesAsync();
+
+        return MapToDetailDto(project);
+    }
+
+    public async Task<bool> DeleteProjectAsync(int id)
+    {
+        var project = await _context.Projects.FindAsync(id);
+        if (project == null)
+            return false;
+
+        _context.Projects.Remove(project);
+        await _context.SaveChangesAsync();
+        return true;
+    }
+
+    private static ProjectDto MapToDto(Project project)
+    {
+        var completedTasks = project.Tasks.Count(t => t.Status == Models.TaskStatus.Completed);
+        var totalTasks = project.Tasks.Count;
+        var progress = totalTasks > 0 ? (double)completedTasks / totalTasks * 100 : 0;
+
+        return new ProjectDto
+        {
+            Id = project.Id,
+            Title = project.Title,
+            Description = project.Description,
+            CreatedAt = project.CreatedAt,
+            UpdatedAt = project.UpdatedAt,
+            Status = project.Status.ToString(),
+            TaskCount = totalTasks,
+            CompletedTaskCount = completedTasks,
+            IdeaCount = project.Ideas.Count,
+            ProgressPercentage = Math.Round(progress, 2)
+        };
+    }
+
+    private static ProjectDetailDto MapToDetailDto(Project project)
+    {
+        var dto = MapToDto(project);
+        return new ProjectDetailDto
+        {
+            Id = dto.Id,
+            Title = dto.Title,
+            Description = dto.Description,
+            CreatedAt = dto.CreatedAt,
+            UpdatedAt = dto.UpdatedAt,
+            Status = dto.Status,
+            TaskCount = dto.TaskCount,
+            CompletedTaskCount = dto.CompletedTaskCount,
+            IdeaCount = dto.IdeaCount,
+            ProgressPercentage = dto.ProgressPercentage,
+            Tasks = project.Tasks.Select(t => new TaskDto
+            {
+                Id = t.Id,
+                Title = t.Title,
+                Description = t.Description,
+                ProjectId = t.ProjectId,
+                ProjectTitle = project.Title,
+                Status = t.Status.ToString(),
+                Priority = t.Priority.ToString(),
+                ProgressPercentage = t.ProgressPercentage,
+                DueDate = t.DueDate,
+                CreatedAt = t.CreatedAt,
+                UpdatedAt = t.UpdatedAt
+            }).ToList(),
+            Ideas = project.Ideas.Select(i => new IdeaDto
+            {
+                Id = i.Id,
+                Title = i.Title,
+                Description = i.Description,
+                ProjectId = i.ProjectId,
+                ProjectTitle = project.Title,
+                CreatedAt = i.CreatedAt,
+                UpdatedAt = i.UpdatedAt
+            }).ToList()
+        };
+    }
+}
