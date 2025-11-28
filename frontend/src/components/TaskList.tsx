@@ -8,6 +8,8 @@ import { Calendar, Flag, Trash2 } from 'lucide-react'
 import { Button } from './ui/button'
 import { format } from 'date-fns'
 import { EditableText } from './ui/editable-text'
+import { PomodoroTimer } from './ui/pomodoro-timer'
+import { useState } from 'react'
 
 interface TaskListProps {
   tasks: Task[]
@@ -30,6 +32,7 @@ const priorityColors = {
 
 export function TaskList({ tasks, projectId }: TaskListProps) {
   const queryClient = useQueryClient()
+  const [completedTaskId, setCompletedTaskId] = useState<number | null>(null)
 
   const updateMutation = useMutation({
     mutationFn: ({ id, data }: { id: number; data: any }) => tasksApi.update(id, data),
@@ -77,6 +80,19 @@ export function TaskList({ tasks, projectId }: TaskListProps) {
       id: taskId,
       data: { title },
     })
+  }
+
+  const handlePomodoroComplete = (taskId: number, taskTitle: string) => {
+    setCompletedTaskId(taskId)
+    // Show browser notification if permitted
+    if ('Notification' in window && Notification.permission === 'granted') {
+      new Notification('Pomodoro Complete!', {
+        body: `Time's up for: ${taskTitle}`,
+        icon: '/vite.svg',
+      })
+    }
+    // Auto-dismiss after 5 seconds
+    setTimeout(() => setCompletedTaskId(null), 5000)
   }
 
   if (tasks.length === 0) {
@@ -154,7 +170,7 @@ export function TaskList({ tasks, projectId }: TaskListProps) {
                     />
                   </div>
 
-                  <div className="flex items-center justify-between gap-4">
+                  <div className="flex items-center justify-between gap-4 flex-wrap">
                     <Select
                       value={task.status}
                       onValueChange={(value) => handleStatusChange(task.id, value)}
@@ -177,6 +193,25 @@ export function TaskList({ tasks, projectId }: TaskListProps) {
                       </div>
                     )}
                   </div>
+
+                  <div className="flex items-center justify-between pt-2 border-t">
+                    <span className="text-sm text-muted-foreground">Pomodoro Timer</span>
+                    <PomodoroTimer
+                      defaultMinutes={25}
+                      onComplete={() => handlePomodoroComplete(task.id, task.title)}
+                    />
+                  </div>
+
+                  {completedTaskId === task.id && (
+                    <div className="mt-2 p-3 bg-green-50 dark:bg-green-950 border border-green-200 dark:border-green-800 rounded-md animate-in fade-in slide-in-from-top-2">
+                      <p className="text-sm font-medium text-green-800 dark:text-green-200">
+                        🎉 Pomodoro Complete!
+                      </p>
+                      <p className="text-xs text-green-600 dark:text-green-400 mt-1">
+                        Great work on "{task.title}"! Time for a break.
+                      </p>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             ))}

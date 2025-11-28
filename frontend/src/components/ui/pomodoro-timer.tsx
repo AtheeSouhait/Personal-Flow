@@ -1,0 +1,171 @@
+import { useState, useEffect, useRef } from 'react'
+import { Play, Pause, RotateCcw } from 'lucide-react'
+import { Button } from './button'
+import { cn } from '@/lib/utils'
+
+interface PomodoroTimerProps {
+  defaultMinutes?: number
+  onComplete?: () => void
+  className?: string
+}
+
+export function PomodoroTimer({
+  defaultMinutes = 25,
+  onComplete,
+  className
+}: PomodoroTimerProps) {
+  const [timeLeft, setTimeLeft] = useState(defaultMinutes * 60) // in seconds
+  const [isRunning, setIsRunning] = useState(false)
+  const [isCompleted, setIsCompleted] = useState(false)
+  const intervalRef = useRef<number | null>(null)
+
+  useEffect(() => {
+    return () => {
+      if (intervalRef.current !== null) {
+        window.clearInterval(intervalRef.current)
+      }
+    }
+  }, [])
+
+  useEffect(() => {
+    if (isRunning && timeLeft > 0) {
+      intervalRef.current = window.setInterval(() => {
+        setTimeLeft((prev) => {
+          if (prev <= 1) {
+            setIsRunning(false)
+            setIsCompleted(true)
+            playCompletionSound()
+            onComplete?.()
+            return 0
+          }
+          return prev - 1
+        })
+      }, 1000)
+    } else {
+      if (intervalRef.current !== null) {
+        window.clearInterval(intervalRef.current)
+      }
+    }
+
+    return () => {
+      if (intervalRef.current !== null) {
+        window.clearInterval(intervalRef.current)
+      }
+    }
+  }, [isRunning, timeLeft, onComplete])
+
+  const playCompletionSound = () => {
+    // Create a simple beep sound using Web Audio API
+    const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)()
+    const oscillator = audioContext.createOscillator()
+    const gainNode = audioContext.createGain()
+
+    oscillator.connect(gainNode)
+    gainNode.connect(audioContext.destination)
+
+    oscillator.frequency.value = 800
+    oscillator.type = 'sine'
+
+    gainNode.gain.setValueAtTime(0.3, audioContext.currentTime)
+    gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.5)
+
+    oscillator.start(audioContext.currentTime)
+    oscillator.stop(audioContext.currentTime + 0.5)
+  }
+
+  const toggleTimer = () => {
+    if (isCompleted) {
+      handleReset()
+    }
+    setIsRunning(!isRunning)
+  }
+
+  const handleReset = () => {
+    setIsRunning(false)
+    setTimeLeft(defaultMinutes * 60)
+    setIsCompleted(false)
+    if (intervalRef.current !== null) {
+      window.clearInterval(intervalRef.current)
+    }
+  }
+
+  const formatTime = (seconds: number) => {
+    const mins = Math.floor(seconds / 60)
+    const secs = seconds % 60
+    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`
+  }
+
+  const progress = ((defaultMinutes * 60 - timeLeft) / (defaultMinutes * 60)) * 100
+
+  return (
+    <div className={cn('flex items-center gap-2', className)}>
+      <div className="relative">
+        <svg className="w-16 h-16 -rotate-90" viewBox="0 0 64 64">
+          {/* Background circle */}
+          <circle
+            cx="32"
+            cy="32"
+            r="28"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="4"
+            className="text-muted/20"
+          />
+          {/* Progress circle */}
+          <circle
+            cx="32"
+            cy="32"
+            r="28"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="4"
+            strokeDasharray={`${2 * Math.PI * 28}`}
+            strokeDashoffset={`${2 * Math.PI * 28 * (1 - progress / 100)}`}
+            strokeLinecap="round"
+            className={cn(
+              'transition-all duration-300',
+              isCompleted ? 'text-green-500' : 'text-primary'
+            )}
+          />
+        </svg>
+        <div className="absolute inset-0 flex items-center justify-center">
+          <span className={cn(
+            'text-xs font-mono font-semibold',
+            isCompleted && 'text-green-500'
+          )}>
+            {formatTime(timeLeft)}
+          </span>
+        </div>
+      </div>
+
+      <div className="flex gap-1">
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={toggleTimer}
+          className={cn(
+            'h-8 w-8',
+            isCompleted && 'text-green-500 hover:text-green-600'
+          )}
+          title={isRunning ? 'Pause' : 'Play'}
+        >
+          {isRunning ? (
+            <Pause className="h-4 w-4" />
+          ) : (
+            <Play className="h-4 w-4" />
+          )}
+        </Button>
+
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={handleReset}
+          className="h-8 w-8"
+          title="Reset"
+        >
+          <RotateCcw className="h-4 w-4" />
+        </Button>
+      </div>
+    </div>
+  )
+}
