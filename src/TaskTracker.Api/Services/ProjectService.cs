@@ -92,7 +92,15 @@ public class ProjectService : IProjectService
     {
         var completedTasks = project.Tasks.Count(t => t.Status == Models.TaskStatus.Completed);
         var totalTasks = project.Tasks.Count;
-        var progress = totalTasks > 0 ? (double)completedTasks / totalTasks * 100 : 0;
+
+        // Calculate progress as: (Sum of % of InProgress+Blocked+Completed tasks) / (total tasks)
+        var relevantTasks = project.Tasks.Where(t =>
+            t.Status == Models.TaskStatus.InProgress ||
+            t.Status == Models.TaskStatus.Blocked ||
+            t.Status == Models.TaskStatus.Completed);
+
+        var sumOfProgress = relevantTasks.Sum(t => t.ProgressPercentage);
+        var progress = totalTasks > 0 ? (double)sumOfProgress / totalTasks : 0.0;
 
         return new ProjectDto
         {

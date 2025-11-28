@@ -7,6 +7,7 @@ import { tasksApi } from '@/api/tasks'
 import { Calendar, Flag, Trash2 } from 'lucide-react'
 import { Button } from './ui/button'
 import { format } from 'date-fns'
+import { EditableText } from './ui/editable-text'
 
 interface TaskListProps {
   tasks: Task[]
@@ -44,10 +45,23 @@ export function TaskList({ tasks, projectId }: TaskListProps) {
     },
   })
 
-  const handleProgressChange = (taskId: number, value: number[]) => {
+  const handleProgressChange = (task: Task, value: number[]) => {
+    const newProgress = value[0]
+    const updateData: any = { progressPercentage: newProgress }
+
+    // Auto-update status to "In Progress" if progress > 0 and status is "Not Started"
+    if (newProgress > 0 && task.status === 'NotStarted') {
+      updateData.status = 'InProgress'
+    }
+
+    // Auto-update status to "Completed" if progress is 100%
+    if (newProgress === 100) {
+      updateData.status = 'Completed'
+    }
+
     updateMutation.mutate({
-      id: taskId,
-      data: { progressPercentage: value[0] },
+      id: task.id,
+      data: updateData,
     })
   }
 
@@ -55,6 +69,13 @@ export function TaskList({ tasks, projectId }: TaskListProps) {
     updateMutation.mutate({
       id: taskId,
       data: { status },
+    })
+  }
+
+  const handleTitleChange = (taskId: number, title: string) => {
+    updateMutation.mutate({
+      id: taskId,
+      data: { title },
     })
   }
 
@@ -89,11 +110,18 @@ export function TaskList({ tasks, projectId }: TaskListProps) {
             {statusTasks.map((task) => (
               <Card key={task.id}>
                 <CardHeader className="pb-3">
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-1">
-                        <CardTitle className="text-base">{task.title}</CardTitle>
-                        <Flag className={`h-4 w-4 ${priorityColors[task.priority]}`} />
+                        <CardTitle className="text-base flex-1">
+                          <EditableText
+                            value={task.title}
+                            onSave={(title) => handleTitleChange(task.id, title)}
+                            isLoading={updateMutation.isPending}
+                            placeholder="Task name..."
+                          />
+                        </CardTitle>
+                        <Flag className={`h-4 w-4 flex-shrink-0 ${priorityColors[task.priority]}`} />
                       </div>
                       {task.description && (
                         <CardDescription className="line-clamp-2">
@@ -105,7 +133,7 @@ export function TaskList({ tasks, projectId }: TaskListProps) {
                       variant="ghost"
                       size="icon"
                       onClick={() => deleteMutation.mutate(task.id)}
-                      className="text-destructive hover:text-destructive"
+                      className="text-destructive hover:text-destructive flex-shrink-0"
                     >
                       <Trash2 className="h-4 w-4" />
                     </Button>
@@ -119,7 +147,7 @@ export function TaskList({ tasks, projectId }: TaskListProps) {
                     </div>
                     <Slider
                       value={[task.progressPercentage]}
-                      onValueChange={(value) => handleProgressChange(task.id, value)}
+                      onValueChange={(value) => handleProgressChange(task, value)}
                       max={100}
                       step={5}
                       className="cursor-pointer"
