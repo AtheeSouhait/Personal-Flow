@@ -59,39 +59,11 @@ export function PomodoroTimer({
 
   const playCompletionSound = async () => {
     try {
-      // Call the TTS service via our API proxy
-      const response = await fetch('/api/tts/synthesize', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          text: "Good job, it's time to take a 5 minutes break!",
-          voiceStyle: 'F2',
-        }),
-        signal: AbortSignal.timeout(10000), // 10 second timeout
-      })
-
-      if (response.ok) {
-        // Get the audio blob from the response
-        const audioBlob = await response.blob()
-        const audioUrl = URL.createObjectURL(audioBlob)
-        const audio = new Audio(audioUrl)
-
-        // Play the TTS audio
-        await audio.play()
-
-        // Clean up the object URL after playing
-        audio.onended = () => {
-          URL.revokeObjectURL(audioUrl)
-        }
-      } else {
-        // If TTS service fails, fall back to simple beep
-        playFallbackBeep()
-      }
+      // Play the local audio file
+      const audio = new Audio('/5minbreak.wav')
+      await audio.play()
     } catch (error) {
-      // Silently handle errors (service not available, timeout, etc.)
-      // Fall back to simple beep sound
+      // If audio file fails to load or play, fall back to simple beep
       playFallbackBeep()
     }
   }
