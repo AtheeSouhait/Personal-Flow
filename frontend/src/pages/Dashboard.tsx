@@ -5,6 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge'
 import { Progress } from '@/components/ui/progress'
 import { CheckCircle2, Lightbulb, ListTodo } from 'lucide-react'
+import DailyTodoList from '@/components/DailyTodoList'
 
 export default function Dashboard() {
   const { data: projects, isLoading } = useQuery({
@@ -44,66 +45,76 @@ export default function Dashboard() {
         </div>
       </div>
 
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-        {projects.map((project) => (
-          <Link key={project.id} to={`/projects/${project.id}`}>
-            <Card className="hover:shadow-lg transition-shadow cursor-pointer h-full">
-              <CardHeader>
-                <div className="flex items-start justify-between">
-                  <CardTitle className="line-clamp-1">{project.title}</CardTitle>
-                  <Badge
-                    variant={project.status === 'Active' ? 'default' : 'secondary'}
-                    className="ml-2"
-                  >
-                    {project.status}
-                  </Badge>
-                </div>
-                {project.description && (
-                  <CardDescription className="line-clamp-2">
-                    {project.description}
-                  </CardDescription>
-                )}
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div>
-                  <div className="flex items-center justify-between text-sm mb-2">
-                    <span className="text-muted-foreground">Progress</span>
-                    <span className="font-medium">{Math.round(project.progressPercentage)}%</span>
-                  </div>
-                  <Progress value={project.progressPercentage} />
-                </div>
+      <div className="flex gap-6">
+        {/* Projects section - 2/3 width */}
+        <div className="flex-1 w-2/3">
+          <div className="grid gap-6 md:grid-cols-1 lg:grid-cols-2 xl:grid-cols-2">
+            {projects.map((project) => (
+              <Link key={project.id} to={`/projects/${project.id}`}>
+                <Card className="hover:shadow-lg transition-shadow cursor-pointer h-full">
+                  <CardHeader>
+                    <div className="flex items-start justify-between">
+                      <CardTitle className="line-clamp-1">{project.title}</CardTitle>
+                      <Badge
+                        variant={project.status === 'Active' ? 'default' : 'secondary'}
+                        className="ml-2"
+                      >
+                        {project.status}
+                      </Badge>
+                    </div>
+                    {project.description && (
+                      <CardDescription className="line-clamp-2">
+                        {project.description}
+                      </CardDescription>
+                    )}
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div>
+                      <div className="flex items-center justify-between text-sm mb-2">
+                        <span className="text-muted-foreground">Progress</span>
+                        <span className="font-medium">{Math.round(project.progressPercentage)}%</span>
+                      </div>
+                      <Progress value={project.progressPercentage} />
+                    </div>
 
-                <div className="grid grid-cols-3 gap-4 text-sm">
-                  <div className="flex items-center space-x-2">
-                    <ListTodo className="h-4 w-4 text-blue-500" />
-                    <div>
-                      <p className="font-medium">{project.taskCount}</p>
-                      <p className="text-xs text-muted-foreground">Tasks</p>
+                    <div className="grid grid-cols-3 gap-4 text-sm">
+                      <div className="flex items-center space-x-2">
+                        <ListTodo className="h-4 w-4 text-blue-500" />
+                        <div>
+                          <p className="font-medium">{project.taskCount}</p>
+                          <p className="text-xs text-muted-foreground">Tasks</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <CheckCircle2 className="h-4 w-4 text-green-500" />
+                        <div>
+                          <p className="font-medium">{project.completedTaskCount}</p>
+                          <p className="text-xs text-muted-foreground">Done</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <Lightbulb className="h-4 w-4 text-amber-500" />
+                        <div>
+                          <p className="font-medium">{project.ideaCount}</p>
+                          <p className="text-xs text-muted-foreground">Ideas</p>
+                        </div>
+                      </div>
                     </div>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <CheckCircle2 className="h-4 w-4 text-green-500" />
-                    <div>
-                      <p className="font-medium">{project.completedTaskCount}</p>
-                      <p className="text-xs text-muted-foreground">Done</p>
-                    </div>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <Lightbulb className="h-4 w-4 text-amber-500" />
-                    <div>
-                      <p className="font-medium">{project.ideaCount}</p>
-                      <p className="text-xs text-muted-foreground">Ideas</p>
-                    </div>
-                  </div>
-                </div>
 
-                <div className="text-xs text-muted-foreground">
-                  Updated {new Date(project.updatedAt).toLocaleDateString()}
-                </div>
-              </CardContent>
-            </Card>
-          </Link>
-        ))}
+                    <div className="text-xs text-muted-foreground">
+                      Updated {new Date(project.updatedAt).toLocaleDateString()}
+                    </div>
+                  </CardContent>
+                </Card>
+              </Link>
+            ))}
+          </div>
+        </div>
+
+        {/* Daily Todo section - 1/3 width */}
+        <div className="w-1/3 min-w-[320px]">
+          <DailyTodoList />
+        </div>
       </div>
     </div>
   )

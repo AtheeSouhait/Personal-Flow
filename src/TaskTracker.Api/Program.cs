@@ -18,6 +18,7 @@ builder.Services.AddScoped<IProjectService, ProjectService>();
 builder.Services.AddScoped<ITaskService, TaskService>();
 builder.Services.AddScoped<IIdeaService, IdeaService>();
 builder.Services.AddScoped<ISearchService, SearchService>();
+builder.Services.AddScoped<IDailyTodoService, DailyTodoService>();
 
 // Register HttpClient for TTS proxy
 builder.Services.AddHttpClient();
@@ -35,11 +36,11 @@ builder.Services.AddCors(options =>
 
 var app = builder.Build();
 
-// Ensure database is created on startup
+// Ensure database is created and migrations are applied on startup
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<TaskTrackerDbContext>();
-    db.Database.EnsureCreated();
+    db.Database.Migrate();
 }
 
 // Configure the HTTP request pipeline

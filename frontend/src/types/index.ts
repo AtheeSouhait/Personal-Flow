@@ -67,3 +67,29 @@ export interface CreateIdeaDto {
   description?: string;
   projectId: number;
 }
+
+export interface DailyTodo {
+  id: number;
+  title: string;
+  description?: string;
+  isCompleted: boolean;
+  displayOrder: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateDailyTodoDto {
+  title: string;
+  description?: string;
+}
+
+export interface UpdateDailyTodoDto {
+  title?: string;
+  description?: string;
+  isCompleted?: boolean;
+  displayOrder?: number;
+}
+
+export interface ReorderDailyTodosDto {
+  todoIds: number[];
+}

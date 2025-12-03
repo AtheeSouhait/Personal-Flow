@@ -13,6 +13,7 @@ public class TaskTrackerDbContext : DbContext
     public DbSet<Project> Projects { get; set; } = null!;
     public DbSet<ProjectTask> Tasks { get; set; } = null!;
     public DbSet<Idea> Ideas { get; set; } = null!;
+    public DbSet<DailyTodo> DailyTodos { get; set; } = null!;
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -66,6 +67,21 @@ public class TaskTrackerDbContext : DbContext
             entity.Property(e => e.UpdatedAt).IsRequired();
 
             entity.HasIndex(e => e.ProjectId);
+        });
+
+        // DailyTodo configuration
+        modelBuilder.Entity<DailyTodo>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Title).IsRequired().HasMaxLength(200);
+            entity.Property(e => e.Description).HasMaxLength(1000);
+            entity.Property(e => e.IsCompleted).IsRequired();
+            entity.Property(e => e.DisplayOrder).IsRequired();
+            entity.Property(e => e.CreatedAt).IsRequired();
+            entity.Property(e => e.UpdatedAt).IsRequired();
+
+            entity.HasIndex(e => e.DisplayOrder);
+            entity.HasIndex(e => e.IsCompleted);
         });
     }
 }
