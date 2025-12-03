@@ -139,7 +139,7 @@ export default function DailyTodoList() {
   return (
     <Card className="h-full flex flex-col bg-gradient-to-br from-slate-900 via-blue-950 to-slate-900 border-2 border-blue-600 shadow-[0_0_20px_rgba(37,99,235,0.3),0_0_40px_rgba(37,99,235,0.1)]">
       <CardHeader className="border-b border-blue-500/30 bg-gradient-to-b from-blue-900/30 to-transparent">
-        <CardTitle className="text-blue-400 font-bold tracking-wide" style={{ textShadow: '0 0 10px rgba(96,165,250,0.5), 0 0 20px rgba(96,165,250,0.3)' }}>
+        <CardTitle className="text-blue-300 font-bold tracking-wide" style={{ textShadow: '0 0 10px rgba(96,165,250,0.5), 0 0 20px rgba(96,165,250,0.3)' }}>
           Daily ToDo
         </CardTitle>
       </CardHeader>
