@@ -1,0 +1,205 @@
+/* Dark Blue Neon Theme for Daily ToDo List */
+
+.neon-card {
+  background: linear-gradient(135deg, #0a1628 0%, #0f1f38 100%);
+  border: 2px solid #1e3a8a;
+  box-shadow:
+    0 0 20px rgba(37, 99, 235, 0.3),
+    0 0 40px rgba(37, 99, 235, 0.1),
+    inset 0 0 60px rgba(37, 99, 235, 0.05);
+  position: relative;
+  overflow: hidden;
+}
+
+.neon-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg,
+    transparent 0%,
+    rgba(59, 130, 246, 0.5) 50%,
+    transparent 100%);
+}
+
+.neon-header {
+  border-bottom: 1px solid rgba(59, 130, 246, 0.3);
+  background: linear-gradient(180deg,
+    rgba(30, 58, 138, 0.3) 0%,
+    transparent 100%);
+}
+
+.neon-title {
+  color: #60a5fa;
+  text-shadow:
+    0 0 10px rgba(96, 165, 250, 0.5),
+    0 0 20px rgba(96, 165, 250, 0.3),
+    0 0 30px rgba(96, 165, 250, 0.1);
+  font-weight: 700;
+  letter-spacing: 0.05em;
+}
+
+.neon-input {
+  background: rgba(15, 23, 42, 0.6);
+  border: 1px solid rgba(59, 130, 246, 0.3);
+  color: #bfdbfe;
+  transition: all 0.3s ease;
+}
+
+.neon-input:focus {
+  background: rgba(15, 23, 42, 0.8);
+  border-color: #3b82f6;
+  box-shadow:
+    0 0 10px rgba(59, 130, 246, 0.4),
+    0 0 20px rgba(59, 130, 246, 0.2),
+    inset 0 0 10px rgba(59, 130, 246, 0.1);
+  outline: none;
+}
+
+.neon-input::placeholder {
+  color: rgba(147, 197, 253, 0.4);
+}
+
+.neon-button {
+  background: linear-gradient(135deg, #1e40af 0%, #1e3a8a 100%);
+  border: 1px solid #3b82f6;
+  color: #dbeafe;
+  font-weight: 600;
+  box-shadow:
+    0 0 10px rgba(59, 130, 246, 0.3),
+    0 0 20px rgba(59, 130, 246, 0.1);
+  transition: all 0.3s ease;
+}
+
+.neon-button:hover {
+  background: linear-gradient(135deg, #2563eb 0%, #1e40af 100%);
+  box-shadow:
+    0 0 15px rgba(59, 130, 246, 0.5),
+    0 0 30px rgba(59, 130, 246, 0.3);
+  transform: translateY(-1px);
+}
+
+.neon-button-small {
+  background: linear-gradient(135deg, #1e40af 0%, #1e3a8a 100%);
+  border: 1px solid #3b82f6;
+  color: #dbeafe;
+  box-shadow: 0 0 8px rgba(59, 130, 246, 0.3);
+}
+
+.neon-button-small:hover {
+  background: linear-gradient(135deg, #2563eb 0%, #1e40af 100%);
+  box-shadow: 0 0 12px rgba(59, 130, 246, 0.5);
+}
+
+.neon-button-outline {
+  background: transparent;
+  border: 1px solid rgba(59, 130, 246, 0.5);
+  color: #93c5fd;
+}
+
+.neon-button-outline:hover {
+  background: rgba(59, 130, 246, 0.1);
+  border-color: #3b82f6;
+  box-shadow: 0 0 10px rgba(59, 130, 246, 0.3);
+}
+
+.neon-todo-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  padding: 0.75rem;
+  border-radius: 0.5rem;
+  border: 1px solid rgba(59, 130, 246, 0.2);
+  background: linear-gradient(135deg,
+    rgba(30, 58, 138, 0.15) 0%,
+    rgba(15, 23, 42, 0.3) 100%);
+  transition: all 0.3s ease;
+  cursor: move;
+  position: relative;
+}
+
+.neon-todo-item::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 0.5rem;
+  padding: 1px;
+  background: linear-gradient(135deg,
+    rgba(59, 130, 246, 0.3) 0%,
+    rgba(59, 130, 246, 0.1) 100%);
+  -webkit-mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.neon-todo-item:hover {
+  background: linear-gradient(135deg,
+    rgba(30, 58, 138, 0.25) 0%,
+    rgba(15, 23, 42, 0.4) 100%);
+  border-color: rgba(59, 130, 246, 0.4);
+  box-shadow:
+    0 0 15px rgba(59, 130, 246, 0.2),
+    inset 0 0 20px rgba(59, 130, 246, 0.05);
+}
+
+.neon-todo-item:hover::before {
+  opacity: 1;
+}
+
+.neon-checkbox {
+  border-color: rgba(59, 130, 246, 0.5);
+  background: rgba(15, 23, 42, 0.6);
+}
+
+.neon-checkbox[data-state="checked"] {
+  background: linear-gradient(135deg, #2563eb 0%, #1e40af 100%);
+  border-color: #3b82f6;
+  box-shadow:
+    0 0 10px rgba(59, 130, 246, 0.5),
+    0 0 20px rgba(59, 130, 246, 0.2);
+}
+
+/* Scrollbar styling for neon theme */
+.neon-card .overflow-y-auto::-webkit-scrollbar {
+  width: 8px;
+}
+
+.neon-card .overflow-y-auto::-webkit-scrollbar-track {
+  background: rgba(15, 23, 42, 0.3);
+  border-radius: 4px;
+}
+
+.neon-card .overflow-y-auto::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, #1e40af 0%, #1e3a8a 100%);
+  border-radius: 4px;
+  border: 1px solid rgba(59, 130, 246, 0.3);
+}
+
+.neon-card .overflow-y-auto::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, #2563eb 0%, #1e40af 100%);
+  box-shadow: 0 0 8px rgba(59, 130, 246, 0.4);
+}
+
+/* Animation for adding new items */
+@keyframes neonPulse {
+  0%, 100% {
+    box-shadow:
+      0 0 10px rgba(59, 130, 246, 0.3),
+      0 0 20px rgba(59, 130, 246, 0.1);
+  }
+  50% {
+    box-shadow:
+      0 0 20px rgba(59, 130, 246, 0.5),
+      0 0 40px rgba(59, 130, 246, 0.3);
+  }
+}
+
+.neon-card {
+  animation: neonPulse 3s ease-in-out infinite;
+}

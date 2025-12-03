@@ -123,39 +123,48 @@ export default function DailyTodoList() {
 
   if (isLoading) {
     return (
-      <Card className="h-full">
-        <CardHeader>
-          <CardTitle>Daily ToDo</CardTitle>
+      <Card className="h-full bg-gradient-to-br from-slate-900 via-blue-950 to-slate-900 border-2 border-blue-600 shadow-[0_0_20px_rgba(37,99,235,0.3)]">
+        <CardHeader className="border-b border-blue-500/30 bg-gradient-to-b from-blue-900/30 to-transparent">
+          <CardTitle className="text-blue-400 font-bold tracking-wide" style={{ textShadow: '0 0 10px rgba(96,165,250,0.5), 0 0 20px rgba(96,165,250,0.3)' }}>
+            Daily ToDo
+          </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="text-muted-foreground">Loading...</div>
+          <div className="text-blue-300/70">Loading...</div>
         </CardContent>
       </Card>
     )
   }
 
   return (
-    <Card className="h-full flex flex-col">
-      <CardHeader>
-        <CardTitle>Daily ToDo</CardTitle>
+    <Card className="h-full flex flex-col bg-gradient-to-br from-slate-900 via-blue-950 to-slate-900 border-2 border-blue-600 shadow-[0_0_20px_rgba(37,99,235,0.3),0_0_40px_rgba(37,99,235,0.1)]">
+      <CardHeader className="border-b border-blue-500/30 bg-gradient-to-b from-blue-900/30 to-transparent">
+        <CardTitle className="text-blue-400 font-bold tracking-wide" style={{ textShadow: '0 0 10px rgba(96,165,250,0.5), 0 0 20px rgba(96,165,250,0.3)' }}>
+          Daily ToDo
+        </CardTitle>
       </CardHeader>
       <CardContent className="flex-1 space-y-4 overflow-y-auto">
         {/* Add new todo */}
-        <div className="space-y-2 pb-4 border-b">
+        <div className="space-y-2 pb-4 border-b border-blue-500/30">
           <Input
             placeholder="New todo..."
             value={newTodoTitle}
             onChange={(e) => setNewTodoTitle(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && handleCreate()}
+            className="bg-slate-900/60 border-blue-500/30 text-blue-100 placeholder:text-blue-400/40 focus:border-blue-500 focus:shadow-[0_0_10px_rgba(59,130,246,0.4)] focus:ring-0"
           />
           <Textarea
             placeholder="Description (optional)"
             value={newTodoDescription}
             onChange={(e) => setNewTodoDescription(e.target.value)}
             rows={2}
-            className="resize-none"
+            className="resize-none bg-slate-900/60 border-blue-500/30 text-blue-100 placeholder:text-blue-400/40 focus:border-blue-500 focus:shadow-[0_0_10px_rgba(59,130,246,0.4)] focus:ring-0"
           />
-          <Button onClick={handleCreate} className="w-full" size="sm">
+          <Button
+            onClick={handleCreate}
+            className="w-full bg-gradient-to-r from-blue-700 to-blue-800 hover:from-blue-600 hover:to-blue-700 border border-blue-500 text-blue-50 font-semibold shadow-[0_0_10px_rgba(59,130,246,0.3)] hover:shadow-[0_0_15px_rgba(59,130,246,0.5)] transition-all"
+            size="sm"
+          >
             <Plus className="h-4 w-4 mr-2" />
             Add Todo
           </Button>
@@ -164,7 +173,7 @@ export default function DailyTodoList() {
         {/* Todo list */}
         <div className="space-y-2">
           {todos.length === 0 ? (
-            <div className="text-center text-muted-foreground py-8">
+            <div className="text-center text-blue-300/50 py-8">
               No todos yet. Add one above!
             </div>
           ) : (
@@ -175,14 +184,14 @@ export default function DailyTodoList() {
                 onDragStart={() => handleDragStart(todo)}
                 onDragOver={handleDragOver}
                 onDrop={() => handleDrop(todo)}
-                className="flex items-start gap-2 p-3 rounded-lg border bg-card hover:bg-accent/50 transition-colors cursor-move"
+                className="flex items-start gap-2 p-3 rounded-lg border border-blue-500/20 bg-gradient-to-br from-blue-900/15 to-slate-900/30 hover:from-blue-900/25 hover:to-slate-900/40 hover:border-blue-500/40 hover:shadow-[0_0_15px_rgba(59,130,246,0.2)] transition-all cursor-move"
               >
-                <GripVertical className="h-5 w-5 text-muted-foreground mt-0.5 flex-shrink-0" />
+                <GripVertical className="h-5 w-5 text-blue-400/70 mt-0.5 flex-shrink-0" />
 
                 <Checkbox
                   checked={todo.isCompleted}
                   onCheckedChange={() => handleToggleComplete(todo)}
-                  className="mt-1 flex-shrink-0"
+                  className="mt-1 flex-shrink-0 border-blue-500/50 bg-slate-900/60 data-[state=checked]:bg-gradient-to-br data-[state=checked]:from-blue-600 data-[state=checked]:to-blue-700 data-[state=checked]:border-blue-500 data-[state=checked]:shadow-[0_0_10px_rgba(59,130,246,0.5)]"
                 />
 
                 <div className="flex-1 min-w-0">
@@ -191,19 +200,28 @@ export default function DailyTodoList() {
                       <Input
                         value={editTitle}
                         onChange={(e) => setEditTitle(e.target.value)}
-                        className="h-8"
+                        className="h-8 bg-slate-900/60 border-blue-500/30 text-blue-100 focus:border-blue-500 focus:shadow-[0_0_10px_rgba(59,130,246,0.4)] focus:ring-0"
                       />
                       <Textarea
                         value={editDescription}
                         onChange={(e) => setEditDescription(e.target.value)}
                         rows={2}
-                        className="resize-none"
+                        className="resize-none bg-slate-900/60 border-blue-500/30 text-blue-100 focus:border-blue-500 focus:shadow-[0_0_10px_rgba(59,130,246,0.4)] focus:ring-0"
                       />
                       <div className="flex gap-2">
-                        <Button onClick={handleSaveEdit} size="sm" variant="default">
+                        <Button
+                          onClick={handleSaveEdit}
+                          size="sm"
+                          className="bg-gradient-to-r from-blue-700 to-blue-800 hover:from-blue-600 hover:to-blue-700 border border-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.3)]"
+                        >
                           <Check className="h-4 w-4" />
                         </Button>
-                        <Button onClick={handleCancelEdit} size="sm" variant="outline">
+                        <Button
+                          onClick={handleCancelEdit}
+                          size="sm"
+                          variant="outline"
+                          className="border-blue-500/50 text-blue-300 hover:bg-blue-500/10 hover:border-blue-500 hover:shadow-[0_0_10px_rgba(59,130,246,0.3)]"
+                        >
                           <X className="h-4 w-4" />
                         </Button>
                       </div>
@@ -212,15 +230,15 @@ export default function DailyTodoList() {
                     <>
                       <div
                         className={`font-medium ${
-                          todo.isCompleted ? 'line-through text-muted-foreground' : ''
+                          todo.isCompleted ? 'line-through text-blue-400/40' : 'text-blue-100'
                         }`}
                       >
                         {todo.title}
                       </div>
                       {todo.description && (
                         <div
-                          className={`text-sm text-muted-foreground mt-1 ${
-                            todo.isCompleted ? 'line-through' : ''
+                          className={`text-sm mt-1 ${
+                            todo.isCompleted ? 'line-through text-blue-400/30' : 'text-blue-300/70'
                           }`}
                         >
                           {todo.description}
@@ -236,7 +254,7 @@ export default function DailyTodoList() {
                       onClick={() => handleStartEdit(todo)}
                       size="sm"
                       variant="ghost"
-                      className="h-8 w-8 p-0"
+                      className="h-8 w-8 p-0 text-blue-400 hover:text-blue-300 hover:bg-blue-500/20"
                     >
                       <Pencil className="h-4 w-4" />
                     </Button>
@@ -244,7 +262,7 @@ export default function DailyTodoList() {
                       onClick={() => handleDelete(todo.id)}
                       size="sm"
                       variant="ghost"
-                      className="h-8 w-8 p-0 text-destructive hover:text-destructive"
+                      className="h-8 w-8 p-0 text-red-400 hover:text-red-300 hover:bg-red-500/20"
                     >
                       <Trash2 className="h-4 w-4" />
                     </Button>
