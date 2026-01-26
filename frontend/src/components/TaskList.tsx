@@ -11,6 +11,7 @@ import { EditableText } from './ui/editable-text'
 import { PomodoroTimer } from './ui/pomodoro-timer'
 import { useState } from 'react'
 import { Textarea } from './ui/textarea'
+import ReactMarkdown from 'react-markdown'
 
 interface TaskListProps {
   tasks: Task[]
@@ -196,8 +197,8 @@ export function TaskList({ tasks, projectId }: TaskListProps) {
                       ) : (
                         <>
                           {task.description && (
-                            <CardDescription className="whitespace-pre-wrap break-words">
-                              {task.description}
+                            <CardDescription className="prose prose-sm max-w-none dark:prose-invert break-words">
+                              <ReactMarkdown>{task.description}</ReactMarkdown>
                             </CardDescription>
                           )}
                           <Button
