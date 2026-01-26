@@ -10,6 +10,7 @@ import { format } from 'date-fns'
 import { EditableText } from './ui/editable-text'
 import { PomodoroTimer } from './ui/pomodoro-timer'
 import { useState } from 'react'
+import { Textarea } from './ui/textarea'
 
 interface TaskListProps {
   tasks: Task[]
@@ -33,6 +34,8 @@ const priorityColors = {
 export function TaskList({ tasks, projectId }: TaskListProps) {
   const queryClient = useQueryClient()
   const [completedTaskId, setCompletedTaskId] = useState<number | null>(null)
+  const [editingDescriptionId, setEditingDescriptionId] = useState<number | null>(null)
+  const [descriptionDraft, setDescriptionDraft] = useState('')
 
   const updateMutation = useMutation({
     mutationFn: ({ id, data }: { id: number; data: any }) => tasksApi.update(id, data),
@@ -80,6 +83,30 @@ export function TaskList({ tasks, projectId }: TaskListProps) {
       id: taskId,
       data: { title },
     })
+  }
+
+  const handleStartDescriptionEdit = (task: Task) => {
+    setEditingDescriptionId(task.id)
+    setDescriptionDraft(task.description ?? '')
+  }
+
+  const handleCancelDescriptionEdit = () => {
+    setEditingDescriptionId(null)
+    setDescriptionDraft('')
+  }
+
+  const handleSaveDescriptionEdit = (task: Task) => {
+    const trimmedDescription = descriptionDraft.trim()
+    if (trimmedDescription === (task.description ?? '').trim()) {
+      setEditingDescriptionId(null)
+      return
+    }
+
+    updateMutation.mutate({
+      id: task.id,
+      data: { description: trimmedDescription ? descriptionDraft : undefined },
+    })
+    setEditingDescriptionId(null)
   }
 
   const handlePomodoroComplete = (taskId: number, taskTitle: string) => {
@@ -139,10 +166,49 @@ export function TaskList({ tasks, projectId }: TaskListProps) {
                         </CardTitle>
                         <Flag className={`h-4 w-4 flex-shrink-0 ${priorityColors[task.priority]}`} />
                       </div>
-                      {task.description && (
-                        <CardDescription className="line-clamp-2">
-                          {task.description}
-                        </CardDescription>
+                      {editingDescriptionId === task.id ? (
+                        <div className="mt-2 space-y-2">
+                          <Textarea
+                            value={descriptionDraft}
+                            onChange={(e) => setDescriptionDraft(e.target.value)}
+                            rows={4}
+                            className="resize-none"
+                            placeholder="Add a description..."
+                          />
+                          <div className="flex items-center gap-2">
+                            <Button
+                              size="sm"
+                              onClick={() => handleSaveDescriptionEdit(task)}
+                              disabled={updateMutation.isPending}
+                            >
+                              Save
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={handleCancelDescriptionEdit}
+                              disabled={updateMutation.isPending}
+                            >
+                              Cancel
+                            </Button>
+                          </div>
+                        </div>
+                      ) : (
+                        <>
+                          {task.description && (
+                            <CardDescription className="whitespace-pre-wrap break-words">
+                              {task.description}
+                            </CardDescription>
+                          )}
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="mt-2 h-7 px-2 text-xs"
+                            onClick={() => handleStartDescriptionEdit(task)}
+                          >
+                            {task.description ? 'Edit description' : 'Add description'}
+                          </Button>
+                        </>
                       )}
                     </div>
                     <Button

@@ -237,7 +237,7 @@ export default function DailyTodoList() {
                       </div>
                       {todo.description && (
                         <div
-                          className={`text-sm mt-1 ${
+                          className={`text-sm mt-1 whitespace-pre-wrap break-words ${
                             todo.isCompleted ? 'line-through text-blue-400/30' : 'text-blue-300/70'
                           }`}
                         >
