@@ -8,6 +8,7 @@ public class Project
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
     public ProjectStatus Status { get; set; } = ProjectStatus.Active;
+    public int DisplayOrder { get; set; } = 0;
 
     // Navigation properties
     public ICollection<ProjectTask> Tasks { get; set; } = new List<ProjectTask>();

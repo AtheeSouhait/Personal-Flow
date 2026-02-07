@@ -4,7 +4,7 @@ import { Slider } from './ui/slider'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { tasksApi } from '@/api/tasks'
-import { Calendar, Flag, Trash2 } from 'lucide-react'
+import { Calendar, Flag, GripVertical, Trash2 } from 'lucide-react'
 import { Button } from './ui/button'
 import { format } from 'date-fns'
 import { EditableText } from './ui/editable-text'
@@ -37,6 +37,7 @@ export function TaskList({ tasks, projectId }: TaskListProps) {
   const [completedTaskId, setCompletedTaskId] = useState<number | null>(null)
   const [editingDescriptionId, setEditingDescriptionId] = useState<number | null>(null)
   const [descriptionDraft, setDescriptionDraft] = useState('')
+  const [draggedTask, setDraggedTask] = useState<Task | null>(null)
 
   const updateMutation = useMutation({
     mutationFn: ({ id, data }: { id: number; data: any }) => tasksApi.update(id, data),
@@ -51,6 +52,42 @@ export function TaskList({ tasks, projectId }: TaskListProps) {
       queryClient.invalidateQueries({ queryKey: ['projects', projectId.toString()] })
     },
   })
+
+  const reorderMutation = useMutation({
+    mutationFn: tasksApi.reorder,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['projects', projectId.toString()] })
+    },
+  })
+
+  const handleTaskDragStart = (task: Task) => {
+    setDraggedTask(task)
+  }
+
+  const handleTaskDragOver = (e: React.DragEvent) => {
+    e.preventDefault()
+  }
+
+  const handleTaskDrop = (targetTask: Task, statusTasks: Task[]) => {
+    if (!draggedTask || draggedTask.id === targetTask.id) return
+    // Only allow reorder within the same status group
+    if (draggedTask.status !== targetTask.status) return
+
+    const reordered = [...statusTasks]
+    const draggedIndex = reordered.findIndex(t => t.id === draggedTask.id)
+    const targetIndex = reordered.findIndex(t => t.id === targetTask.id)
+
+    reordered.splice(draggedIndex, 1)
+    reordered.splice(targetIndex, 0, draggedTask)
+
+    const taskIds = reordered.map(t => t.id)
+    reorderMutation.mutate({ taskIds })
+    setDraggedTask(null)
+  }
+
+  const handleTaskDragEnd = () => {
+    setDraggedTask(null)
+  }
 
   const handleProgressChange = (task: Task, value: number[]) => {
     const newProgress = value[0]
@@ -152,11 +189,21 @@ export function TaskList({ tasks, projectId }: TaskListProps) {
 
           <div className="space-y-3">
             {statusTasks.map((task) => (
-              <Card key={task.id}>
+              <div
+                key={task.id}
+                draggable
+                onDragStart={() => handleTaskDragStart(task)}
+                onDragOver={handleTaskDragOver}
+                onDrop={() => handleTaskDrop(task, statusTasks)}
+                onDragEnd={handleTaskDragEnd}
+                className={`transition-opacity ${draggedTask?.id === task.id ? 'opacity-50' : ''}`}
+              >
+              <Card>
                 <CardHeader className="pb-3">
                   <div className="flex items-start justify-between gap-2">
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-1">
+                        <GripVertical className="h-5 w-5 text-muted-foreground/50 flex-shrink-0 cursor-grab" />
                         <CardTitle className="text-base flex-1">
                           <EditableText
                             value={task.title}
@@ -281,6 +328,7 @@ export function TaskList({ tasks, projectId }: TaskListProps) {
                   )}
                 </CardContent>
               </Card>
+              </div>
             ))}
           </div>
         </div>

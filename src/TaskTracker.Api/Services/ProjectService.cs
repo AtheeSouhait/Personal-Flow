@@ -19,7 +19,7 @@ public class ProjectService : IProjectService
         var projects = await _context.Projects
             .Include(p => p.Tasks)
             .Include(p => p.Ideas)
-            .OrderByDescending(p => p.UpdatedAt)
+            .OrderBy(p => p.DisplayOrder).ThenByDescending(p => p.CreatedAt)
             .ToListAsync();
 
         return projects.Select(MapToDto);
@@ -37,10 +37,15 @@ public class ProjectService : IProjectService
 
     public async Task<ProjectDetailDto> CreateProjectAsync(CreateProjectDto createDto)
     {
+        var maxOrder = await _context.Projects.AnyAsync()
+            ? await _context.Projects.MaxAsync(p => p.DisplayOrder)
+            : -1;
+
         var project = new Project
         {
             Title = createDto.Title,
             Description = createDto.Description,
+            DisplayOrder = maxOrder + 1,
             CreatedAt = DateTime.UtcNow,
             UpdatedAt = DateTime.UtcNow
         };
@@ -88,6 +93,29 @@ public class ProjectService : IProjectService
         return true;
     }
 
+    public async Task<bool> ReorderProjectsAsync(ReorderProjectsDto dto)
+    {
+        var projects = await _context.Projects
+            .Where(p => dto.ProjectIds.Contains(p.Id))
+            .ToListAsync();
+
+        if (projects.Count != dto.ProjectIds.Count)
+            return false;
+
+        for (int i = 0; i < dto.ProjectIds.Count; i++)
+        {
+            var project = projects.FirstOrDefault(p => p.Id == dto.ProjectIds[i]);
+            if (project != null)
+            {
+                project.DisplayOrder = i;
+                project.UpdatedAt = DateTime.UtcNow;
+            }
+        }
+
+        await _context.SaveChangesAsync();
+        return true;
+    }
+
     private static ProjectDto MapToDto(Project project)
     {
         var completedTasks = project.Tasks.Count(t => t.Status == Models.TaskStatus.Completed);
@@ -113,7 +141,8 @@ public class ProjectService : IProjectService
             TaskCount = totalTasks,
             CompletedTaskCount = completedTasks,
             IdeaCount = project.Ideas.Count,
-            ProgressPercentage = Math.Round(progress, 2)
+            ProgressPercentage = Math.Round(progress, 2),
+            DisplayOrder = project.DisplayOrder
         };
     }
 
@@ -132,7 +161,7 @@ public class ProjectService : IProjectService
             CompletedTaskCount = dto.CompletedTaskCount,
             IdeaCount = dto.IdeaCount,
             ProgressPercentage = dto.ProgressPercentage,
-            Tasks = project.Tasks.Select(t => new TaskDto
+            Tasks = project.Tasks.OrderBy(t => t.DisplayOrder).ThenByDescending(t => t.CreatedAt).Select(t => new TaskDto
             {
                 Id = t.Id,
                 Title = t.Title,
@@ -142,6 +171,7 @@ public class ProjectService : IProjectService
                 Status = t.Status.ToString(),
                 Priority = t.Priority.ToString(),
                 ProgressPercentage = t.ProgressPercentage,
+                DisplayOrder = t.DisplayOrder,
                 DueDate = t.DueDate,
                 CreatedAt = t.CreatedAt,
                 UpdatedAt = t.UpdatedAt

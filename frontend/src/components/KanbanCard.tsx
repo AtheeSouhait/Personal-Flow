@@ -1,3 +1,4 @@
+import { useRef } from 'react'
 import { Task } from '@/types'
 import { Flag, Calendar } from 'lucide-react'
 import { format } from 'date-fns'
@@ -25,7 +26,7 @@ interface KanbanCardProps {
   task: Task
   isDragging: boolean
   dropIndicator: DragPosition | null
-  onDragStart: (task: Task) => void
+  onDragStart: (task: Task, e: React.DragEvent) => void
   onDragEnd: () => void
   onDragOver: (e: React.DragEvent, task: Task) => void
   onDrop: (e: React.DragEvent, task: Task) => void
@@ -42,30 +43,38 @@ export function KanbanCard({
   onDrop,
   onClick,
 }: KanbanCardProps) {
-  const showBeforeIndicator = dropIndicator?.taskId === task.id && dropIndicator.position === 'before'
-  const showAfterIndicator = dropIndicator?.taskId === task.id && dropIndicator.position === 'after'
+  const cardRef = useRef<HTMLDivElement>(null)
+  const showBeforeGap = dropIndicator?.taskId === task.id && dropIndicator.position === 'before'
+  const showAfterGap = dropIndicator?.taskId === task.id && dropIndicator.position === 'after'
   const statusColor = progressBarColors[task.status]
 
   return (
-    <div>
-      {showBeforeIndicator && (
-        <div className={`h-0.5 ${statusColor} rounded-full my-1`} />
-      )}
+    <div className="relative">
+      {/* Animated gap before card */}
       <div
+        className={`transition-all duration-200 ease-out overflow-hidden ${
+          showBeforeGap ? 'h-12 mb-1' : 'h-0'
+        }`}
+      >
+        <div className={`h-full rounded-lg border-2 border-dashed border-primary/30 bg-primary/5`} />
+      </div>
+
+      <div
+        ref={cardRef}
         draggable
         onDragStart={(e) => {
           e.dataTransfer.effectAllowed = 'move'
-          onDragStart(task)
+          onDragStart(task, e)
         }}
         onDragEnd={onDragEnd}
-        onDragOver={(e) => onDragOver(e, task)}
-        onDrop={(e) => onDrop(e, task)}
+        onDragOver={(e) => { e.stopPropagation(); onDragOver(e, task) }}
+        onDrop={(e) => { e.stopPropagation(); onDrop(e, task) }}
         onClick={() => onClick(task)}
         className={`
-          bg-card border rounded-lg p-3 cursor-pointer
+          bg-card border rounded-lg p-3 cursor-pointer select-none
           hover:border-primary/50 hover:shadow-sm
-          transition-all duration-150
-          ${isDragging ? 'opacity-50 scale-95' : ''}
+          transition-all duration-200 ease-out
+          ${isDragging ? 'opacity-30 scale-[0.97] border-dashed border-primary/40' : ''}
         `}
       >
         <div className="flex items-start gap-2 mb-1">
@@ -89,9 +98,15 @@ export function KanbanCard({
           </div>
         )}
       </div>
-      {showAfterIndicator && (
-        <div className={`h-0.5 ${statusColor} rounded-full my-1`} />
-      )}
+
+      {/* Animated gap after card */}
+      <div
+        className={`transition-all duration-200 ease-out overflow-hidden ${
+          showAfterGap ? 'h-12 mt-1' : 'h-0'
+        }`}
+      >
+        <div className={`h-full rounded-lg border-2 border-dashed border-primary/30 bg-primary/5`} />
+      </div>
     </div>
   )
 }

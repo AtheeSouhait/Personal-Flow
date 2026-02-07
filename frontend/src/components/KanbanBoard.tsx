@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useRef, useEffect } from 'react'
 import { Task } from '@/types'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { tasksApi } from '@/api/tasks'
@@ -18,8 +18,20 @@ export function KanbanBoard({ tasks, projectId }: KanbanBoardProps) {
   const queryClient = useQueryClient()
   const [draggedTask, setDraggedTask] = useState<Task | null>(null)
   const [dropIndicator, setDropIndicator] = useState<DragPosition | null>(null)
+  const [dragOverColumn, setDragOverColumn] = useState<Task['status'] | null>(null)
   const [selectedTask, setSelectedTask] = useState<Task | null>(null)
   const [createDialogStatus, setCreateDialogStatus] = useState<string | null>(null)
+  const ghostRef = useRef<HTMLDivElement | null>(null)
+
+  // Clean up drag ghost on unmount
+  useEffect(() => {
+    return () => {
+      if (ghostRef.current) {
+        document.body.removeChild(ghostRef.current)
+        ghostRef.current = null
+      }
+    }
+  }, [])
 
   const invalidate = () => {
     queryClient.invalidateQueries({ queryKey: ['projects', projectId.toString()] })
@@ -48,13 +60,54 @@ export function KanbanBoard({ tasks, projectId }: KanbanBoardProps) {
       .sort((a, b) => a.displayOrder - b.displayOrder),
   }))
 
-  const handleDragStart = useCallback((task: Task) => {
+  const handleDragStart = useCallback((task: Task, e: React.DragEvent) => {
     setDraggedTask(task)
+
+    // Create custom drag ghost
+    const ghost = document.createElement('div')
+    ghost.textContent = task.title
+    ghost.style.cssText = `
+      position: fixed;
+      top: -1000px;
+      left: -1000px;
+      max-width: 220px;
+      padding: 8px 12px;
+      background: hsl(var(--card));
+      color: hsl(var(--card-foreground));
+      border: 1px solid hsl(var(--primary) / 0.5);
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 500;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      pointer-events: none;
+      z-index: 9999;
+    `
+    document.body.appendChild(ghost)
+    e.dataTransfer.setDragImage(ghost, 110, 20)
+    ghostRef.current = ghost
+
+    // Clean up ghost after a frame (browser captures it immediately)
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        if (ghostRef.current) {
+          document.body.removeChild(ghostRef.current)
+          ghostRef.current = null
+        }
+      })
+    })
   }, [])
 
   const handleDragEnd = useCallback(() => {
     setDraggedTask(null)
     setDropIndicator(null)
+    setDragOverColumn(null)
+    if (ghostRef.current) {
+      document.body.removeChild(ghostRef.current)
+      ghostRef.current = null
+    }
   }, [])
 
   const handleDragOverCard = useCallback((e: React.DragEvent, task: Task) => {
@@ -72,6 +125,7 @@ export function KanbanBoard({ tasks, projectId }: KanbanBoardProps) {
     e.preventDefault()
     if (!draggedTask || draggedTask.id === targetTask.id) {
       setDropIndicator(null)
+      setDragOverColumn(null)
       return
     }
 
@@ -95,11 +149,23 @@ export function KanbanBoard({ tasks, projectId }: KanbanBoardProps) {
 
     setDraggedTask(null)
     setDropIndicator(null)
+    setDragOverColumn(null)
   }, [draggedTask, dropIndicator, columns, updateMutation, reorderMutation])
 
-  const handleDragOverColumn = useCallback((e: React.DragEvent) => {
+  const handleDragOverColumn = useCallback((e: React.DragEvent, status: Task['status']) => {
     e.preventDefault()
     e.dataTransfer.dropEffect = 'move'
+    setDragOverColumn(status)
+  }, [])
+
+  const handleDragLeaveColumn = useCallback((e: React.DragEvent) => {
+    // Only clear if actually leaving the column (not entering a child)
+    const relatedTarget = e.relatedTarget as HTMLElement | null
+    const currentTarget = e.currentTarget as HTMLElement
+    if (!relatedTarget || !currentTarget.contains(relatedTarget)) {
+      setDragOverColumn(null)
+      setDropIndicator(null)
+    }
   }, [])
 
   const makeColumnDropHandler = useCallback((status: Task['status']) => {
@@ -108,8 +174,6 @@ export function KanbanBoard({ tasks, projectId }: KanbanBoardProps) {
       if (!draggedTask) return
 
       const columnTasks = columns.find((c) => c.status === status)?.tasks ?? []
-      // Only handle drop on column body (not on a card — that's handled by handleDropOnCard)
-      // This fires when dropping on empty area / after last card
       const filteredTasks = columnTasks.filter((t) => t.id !== draggedTask.id)
       filteredTasks.push(draggedTask)
 
@@ -123,6 +187,7 @@ export function KanbanBoard({ tasks, projectId }: KanbanBoardProps) {
 
       setDraggedTask(null)
       setDropIndicator(null)
+      setDragOverColumn(null)
     }
   }, [draggedTask, columns, updateMutation, reorderMutation])
 
@@ -153,11 +218,13 @@ export function KanbanBoard({ tasks, projectId }: KanbanBoardProps) {
             tasks={columnTasks}
             draggedTaskId={draggedTask?.id ?? null}
             dropIndicator={dropIndicator}
+            isDragOver={dragOverColumn === status && draggedTask !== null}
             onDragStart={handleDragStart}
             onDragEnd={handleDragEnd}
             onDragOverCard={handleDragOverCard}
             onDropOnCard={handleDropOnCard}
-            onDragOverColumn={handleDragOverColumn}
+            onDragOverColumn={(e) => handleDragOverColumn(e, status)}
+            onDragLeaveColumn={handleDragLeaveColumn}
             onDropOnColumn={makeColumnDropHandler(status)}
             onCardClick={handleCardClick}
             onAddTask={() => setCreateDialogStatus(status)}

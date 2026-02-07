@@ -12,6 +12,7 @@ public class ProjectDto
     public int CompletedTaskCount { get; set; }
     public int IdeaCount { get; set; }
     public double ProgressPercentage { get; set; }
+    public int DisplayOrder { get; set; }
 }
 
 public class ProjectDetailDto : ProjectDto
@@ -32,3 +33,5 @@ public class UpdateProjectDto
     public string? Description { get; set; }
     public string? Status { get; set; }
 }
+
+public record ReorderProjectsDto(List<int> ProjectIds);

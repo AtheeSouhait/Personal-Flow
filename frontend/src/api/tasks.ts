@@ -1,5 +1,5 @@
 import { apiClient } from './client';
-import { Task, CreateTaskDto } from '@/types';
+import { Task, CreateTaskDto, ReorderTasksDto } from '@/types';
 
 export const tasksApi = {
   getAll: async (projectId?: number): Promise<Task[]> => {
@@ -25,5 +25,9 @@ export const tasksApi = {
 
   delete: async (id: number): Promise<void> => {
     await apiClient.delete(`/tasks/${id}`);
+  },
+
+  reorder: async (dto: ReorderTasksDto): Promise<void> => {
+    await apiClient.post('/tasks/reorder', dto);
   },
 };

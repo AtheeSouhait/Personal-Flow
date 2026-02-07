@@ -62,6 +62,19 @@ public class TasksController : ControllerBase
     }
 
     /// <summary>
+    /// Reorder tasks
+    /// </summary>
+    [HttpPost("reorder")]
+    public async Task<ActionResult> ReorderTasks([FromBody] ReorderTasksDto dto)
+    {
+        var success = await _taskService.ReorderTasksAsync(dto);
+        if (!success)
+            return BadRequest("Invalid task IDs provided");
+
+        return NoContent();
+    }
+
+    /// <summary>
     /// Delete a task
     /// </summary>
     [HttpDelete("{id}")]

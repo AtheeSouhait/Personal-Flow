@@ -28,6 +28,8 @@ public class TaskTrackerDbContext : DbContext
             entity.Property(e => e.CreatedAt).IsRequired();
             entity.Property(e => e.UpdatedAt).IsRequired();
             entity.Property(e => e.Status).HasConversion<string>();
+            entity.Property(e => e.DisplayOrder).IsRequired();
+            entity.HasIndex(e => e.DisplayOrder);
 
             entity.HasMany(e => e.Tasks)
                 .WithOne(e => e.Project)
@@ -52,6 +54,8 @@ public class TaskTrackerDbContext : DbContext
             entity.Property(e => e.CreatedAt).IsRequired();
             entity.Property(e => e.UpdatedAt).IsRequired();
 
+            entity.Property(e => e.DisplayOrder).IsRequired();
+            entity.HasIndex(e => e.DisplayOrder);
             entity.HasIndex(e => e.ProjectId);
             entity.HasIndex(e => e.Status);
             entity.HasIndex(e => e.DueDate);

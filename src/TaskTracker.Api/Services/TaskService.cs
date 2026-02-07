@@ -22,7 +22,7 @@ public class TaskService : ITaskService
             query = query.Where(t => t.ProjectId == projectId.Value);
 
         var tasks = await query
-            .OrderByDescending(t => t.UpdatedAt)
+            .OrderBy(t => t.DisplayOrder).ThenByDescending(t => t.CreatedAt)
             .ToListAsync();
 
         return tasks.Select(MapToDto);
@@ -39,6 +39,10 @@ public class TaskService : ITaskService
 
     public async Task<TaskDto> CreateTaskAsync(CreateTaskDto createDto)
     {
+        var maxOrder = await _context.Tasks.Where(t => t.ProjectId == createDto.ProjectId).AnyAsync()
+            ? await _context.Tasks.Where(t => t.ProjectId == createDto.ProjectId).MaxAsync(t => t.DisplayOrder)
+            : -1;
+
         var task = new ProjectTask
         {
             Title = createDto.Title,
@@ -47,6 +51,7 @@ public class TaskService : ITaskService
             Status = ParseTaskStatus(createDto.Status),
             Priority = ParseTaskPriority(createDto.Priority),
             ProgressPercentage = createDto.ProgressPercentage ?? 0,
+            DisplayOrder = maxOrder + 1,
             DueDate = createDto.DueDate,
             CreatedAt = DateTime.UtcNow,
             UpdatedAt = DateTime.UtcNow
@@ -106,6 +111,29 @@ public class TaskService : ITaskService
         return true;
     }
 
+    public async Task<bool> ReorderTasksAsync(ReorderTasksDto dto)
+    {
+        var tasks = await _context.Tasks
+            .Where(t => dto.TaskIds.Contains(t.Id))
+            .ToListAsync();
+
+        if (tasks.Count != dto.TaskIds.Count)
+            return false;
+
+        for (int i = 0; i < dto.TaskIds.Count; i++)
+        {
+            var task = tasks.FirstOrDefault(t => t.Id == dto.TaskIds[i]);
+            if (task != null)
+            {
+                task.DisplayOrder = i;
+                task.UpdatedAt = DateTime.UtcNow;
+            }
+        }
+
+        await _context.SaveChangesAsync();
+        return true;
+    }
+
     private static TaskDto MapToDto(ProjectTask task)
     {
         return new TaskDto
@@ -118,6 +146,7 @@ public class TaskService : ITaskService
             Status = task.Status.ToString(),
             Priority = task.Priority.ToString(),
             ProgressPercentage = task.ProgressPercentage,
+            DisplayOrder = task.DisplayOrder,
             DueDate = task.DueDate,
             CreatedAt = task.CreatedAt,
             UpdatedAt = task.UpdatedAt

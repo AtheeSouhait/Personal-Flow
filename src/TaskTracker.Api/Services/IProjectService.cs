@@ -9,4 +9,5 @@ public interface IProjectService
     Task<ProjectDetailDto> CreateProjectAsync(CreateProjectDto createDto);
     Task<ProjectDetailDto?> UpdateProjectAsync(int id, UpdateProjectDto updateDto);
     Task<bool> DeleteProjectAsync(int id);
+    Task<bool> ReorderProjectsAsync(ReorderProjectsDto dto);
 }

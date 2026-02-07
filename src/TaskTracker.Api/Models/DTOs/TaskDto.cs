@@ -11,6 +11,7 @@ public class TaskDto
     public string Priority { get; set; } = "Medium";
     public int ProgressPercentage { get; set; }
     public DateTime? DueDate { get; set; }
+    public int DisplayOrder { get; set; }
     public DateTime CreatedAt { get; set; }
     public DateTime UpdatedAt { get; set; }
 }
@@ -35,3 +36,5 @@ public class UpdateTaskDto
     public int? ProgressPercentage { get; set; }
     public DateTime? DueDate { get; set; }
 }
+
+public record ReorderTasksDto(List<int> TaskIds);

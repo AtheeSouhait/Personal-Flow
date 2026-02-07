@@ -139,7 +139,7 @@ export default function DailyTodoList() {
   return (
     <Card className="h-full flex flex-col bg-gradient-to-br from-slate-900 via-blue-950 to-slate-900 border-2 border-blue-600 shadow-[0_0_20px_rgba(37,99,235,0.3),0_0_40px_rgba(37,99,235,0.1)]">
       <CardHeader className="border-b border-blue-500/30 bg-gradient-to-b from-blue-900/30 to-transparent">
-        <CardTitle className="text-blue-300 font-bold tracking-wide" style={{ textShadow: '0 0 10px rgba(96,165,250,0.5), 0 0 20px rgba(96,165,250,0.3)' }}>
+        <CardTitle className="text-blue-100 font-bold tracking-wide" style={{ textShadow: '0 0 10px rgba(96,165,250,0.55), 0 0 22px rgba(96,165,250,0.3)' }}>
           Daily ToDo
         </CardTitle>
       </CardHeader>
@@ -151,14 +151,14 @@ export default function DailyTodoList() {
             value={newTodoTitle}
             onChange={(e) => setNewTodoTitle(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && handleCreate()}
-            className="bg-slate-900/60 border-blue-500/30 text-blue-100 placeholder:text-blue-400/40 focus:border-blue-500 focus:shadow-[0_0_10px_rgba(59,130,246,0.4)] focus:ring-0"
+            className="bg-slate-950/70 border-blue-400/45 text-slate-50 placeholder:text-blue-200/75 focus:border-blue-300 focus:shadow-[0_0_0_1px_rgba(147,197,253,0.35),0_0_18px_rgba(59,130,246,0.35)] focus:ring-0"
           />
           <Textarea
             placeholder="Description (optional)"
             value={newTodoDescription}
             onChange={(e) => setNewTodoDescription(e.target.value)}
             rows={2}
-            className="resize-none bg-slate-900/60 border-blue-500/30 text-blue-100 placeholder:text-blue-400/40 focus:border-blue-500 focus:shadow-[0_0_10px_rgba(59,130,246,0.4)] focus:ring-0"
+            className="resize-none bg-slate-950/70 border-blue-400/45 text-slate-50 placeholder:text-blue-200/75 focus:border-blue-300 focus:shadow-[0_0_0_1px_rgba(147,197,253,0.35),0_0_18px_rgba(59,130,246,0.35)] focus:ring-0"
           />
           <Button
             onClick={handleCreate}
@@ -173,7 +173,10 @@ export default function DailyTodoList() {
         {/* Todo list */}
         <div className="space-y-2">
           {todos.length === 0 ? (
-            <div className="text-center text-blue-300/50 py-8">
+            <div
+              className="text-center text-blue-100/80 py-8"
+              style={{ textShadow: '0 0 14px rgba(147,197,253,0.22)' }}
+            >
               No todos yet. Add one above!
             </div>
           ) : (
@@ -200,13 +203,13 @@ export default function DailyTodoList() {
                       <Input
                         value={editTitle}
                         onChange={(e) => setEditTitle(e.target.value)}
-                        className="h-8 bg-slate-900/60 border-blue-500/30 text-blue-100 focus:border-blue-500 focus:shadow-[0_0_10px_rgba(59,130,246,0.4)] focus:ring-0"
+                        className="h-8 bg-slate-950/70 border-blue-400/45 text-slate-50 focus:border-blue-300 focus:shadow-[0_0_0_1px_rgba(147,197,253,0.35),0_0_18px_rgba(59,130,246,0.35)] focus:ring-0"
                       />
                       <Textarea
                         value={editDescription}
                         onChange={(e) => setEditDescription(e.target.value)}
                         rows={2}
-                        className="resize-none bg-slate-900/60 border-blue-500/30 text-blue-100 focus:border-blue-500 focus:shadow-[0_0_10px_rgba(59,130,246,0.4)] focus:ring-0"
+                        className="resize-none bg-slate-950/70 border-blue-400/45 text-slate-50 focus:border-blue-300 focus:shadow-[0_0_0_1px_rgba(147,197,253,0.35),0_0_18px_rgba(59,130,246,0.35)] focus:ring-0"
                       />
                       <div className="flex gap-2">
                         <Button
@@ -230,7 +233,7 @@ export default function DailyTodoList() {
                     <>
                       <div
                         className={`font-medium ${
-                          todo.isCompleted ? 'line-through text-blue-400/40' : 'text-blue-100'
+                          todo.isCompleted ? 'line-through text-blue-200/60' : 'text-slate-50'
                         }`}
                       >
                         {todo.title}
@@ -238,7 +241,7 @@ export default function DailyTodoList() {
                       {todo.description && (
                         <div
                           className={`text-sm mt-1 whitespace-pre-wrap break-words ${
-                            todo.isCompleted ? 'line-through text-blue-400/30' : 'text-blue-300/70'
+                            todo.isCompleted ? 'line-through text-blue-200/45' : 'text-blue-100/75'
                           }`}
                         >
                           {todo.description}

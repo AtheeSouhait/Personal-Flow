@@ -9,4 +9,5 @@ public interface ITaskService
     Task<TaskDto> CreateTaskAsync(CreateTaskDto createDto);
     Task<TaskDto?> UpdateTaskAsync(int id, UpdateTaskDto updateDto);
     Task<bool> DeleteTaskAsync(int id);
+    Task<bool> ReorderTasksAsync(ReorderTasksDto dto);
 }

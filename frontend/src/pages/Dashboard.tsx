@@ -1,17 +1,56 @@
-import { useQuery } from '@tanstack/react-query'
+import { useState } from 'react'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { projectsApi } from '@/api/projects'
 import { Link } from 'react-router-dom'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Progress } from '@/components/ui/progress'
-import { CheckCircle2, Lightbulb, ListTodo } from 'lucide-react'
+import { CheckCircle2, GripVertical, Lightbulb, ListTodo } from 'lucide-react'
 import DailyTodoList from '@/components/DailyTodoList'
+import type { Project } from '@/types'
 
 export default function Dashboard() {
+  const queryClient = useQueryClient()
+  const [draggedItem, setDraggedItem] = useState<Project | null>(null)
+
   const { data: projects, isLoading } = useQuery({
     queryKey: ['projects'],
     queryFn: projectsApi.getAll,
   })
+
+  const reorderMutation = useMutation({
+    mutationFn: projectsApi.reorder,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['projects'] })
+    },
+  })
+
+  const handleDragStart = (project: Project) => {
+    setDraggedItem(project)
+  }
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault()
+  }
+
+  const handleDrop = (targetProject: Project) => {
+    if (!draggedItem || draggedItem.id === targetProject.id || !projects) return
+
+    const reordered = [...projects]
+    const draggedIndex = reordered.findIndex(p => p.id === draggedItem.id)
+    const targetIndex = reordered.findIndex(p => p.id === targetProject.id)
+
+    reordered.splice(draggedIndex, 1)
+    reordered.splice(targetIndex, 0, draggedItem)
+
+    const projectIds = reordered.map(p => p.id)
+    reorderMutation.mutate({ projectIds })
+    setDraggedItem(null)
+  }
+
+  const handleDragEnd = () => {
+    setDraggedItem(null)
+  }
 
   if (isLoading) {
     return (
@@ -50,11 +89,26 @@ export default function Dashboard() {
         <div className="flex-1 w-2/3">
           <div className="grid gap-6 md:grid-cols-1 lg:grid-cols-2 xl:grid-cols-2">
             {projects.map((project) => (
-              <Link key={project.id} to={`/projects/${project.id}`}>
+              <div
+                key={project.id}
+                draggable
+                onDragStart={() => handleDragStart(project)}
+                onDragOver={handleDragOver}
+                onDrop={() => handleDrop(project)}
+                onDragEnd={handleDragEnd}
+                className={`transition-opacity ${draggedItem?.id === project.id ? 'opacity-50' : ''}`}
+              >
+              <Link to={`/projects/${project.id}`}>
                 <Card className="hover:shadow-lg transition-shadow cursor-pointer h-full">
                   <CardHeader>
                     <div className="flex items-start justify-between">
-                      <CardTitle className="line-clamp-1">{project.title}</CardTitle>
+                      <div className="flex items-center gap-1">
+                        <GripVertical
+                          className="h-5 w-5 text-muted-foreground/50 flex-shrink-0 cursor-grab"
+                          onMouseDown={(e) => e.stopPropagation()}
+                        />
+                        <CardTitle className="line-clamp-1">{project.title}</CardTitle>
+                      </div>
                       <Badge
                         variant={project.status === 'Active' ? 'default' : 'secondary'}
                         className="ml-2"
@@ -107,6 +161,7 @@ export default function Dashboard() {
                   </CardContent>
                 </Card>
               </Link>
+              </div>
             ))}
           </div>
         </div>

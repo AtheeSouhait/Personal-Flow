@@ -9,6 +9,7 @@ export interface Project {
   completedTaskCount: number;
   ideaCount: number;
   progressPercentage: number;
+  displayOrder: number;
 }
 
 export interface ProjectDetail extends Project {
@@ -25,6 +26,7 @@ export interface Task {
   status: 'NotStarted' | 'InProgress' | 'Completed' | 'Blocked';
   priority: 'Low' | 'Medium' | 'High' | 'Critical';
   progressPercentage: number;
+  displayOrder: number;
   dueDate?: string;
   createdAt: string;
   updatedAt: string;
@@ -92,4 +94,12 @@ export interface UpdateDailyTodoDto {
 
 export interface ReorderDailyTodosDto {
   todoIds: number[];
+}
+
+export interface ReorderProjectsDto {
+  projectIds: number[];
+}
+
+export interface ReorderTasksDto {
+  taskIds: number[];
 }

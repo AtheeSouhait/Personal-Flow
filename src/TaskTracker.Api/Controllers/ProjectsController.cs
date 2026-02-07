@@ -62,6 +62,19 @@ public class ProjectsController : ControllerBase
     }
 
     /// <summary>
+    /// Reorder projects
+    /// </summary>
+    [HttpPost("reorder")]
+    public async Task<ActionResult> ReorderProjects([FromBody] ReorderProjectsDto dto)
+    {
+        var success = await _projectService.ReorderProjectsAsync(dto);
+        if (!success)
+            return BadRequest("Invalid project IDs provided");
+
+        return NoContent();
+    }
+
+    /// <summary>
     /// Delete a project
     /// </summary>
     [HttpDelete("{id}")]

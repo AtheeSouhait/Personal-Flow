@@ -10,6 +10,7 @@ public class ProjectTask
     public TaskPriority Priority { get; set; } = TaskPriority.Medium;
     public int ProgressPercentage { get; set; } = 0; // 0-100
     public DateTime? DueDate { get; set; }
+    public int DisplayOrder { get; set; } = 0;
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
 

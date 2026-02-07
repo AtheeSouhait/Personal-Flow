@@ -1,5 +1,5 @@
 import { apiClient } from './client';
-import { Project, ProjectDetail, CreateProjectDto } from '@/types';
+import { Project, ProjectDetail, CreateProjectDto, ReorderProjectsDto } from '@/types';
 
 export const projectsApi = {
   getAll: async (): Promise<Project[]> => {
@@ -24,5 +24,9 @@ export const projectsApi = {
 
   delete: async (id: number): Promise<void> => {
     await apiClient.delete(`/projects/${id}`);
+  },
+
+  reorder: async (dto: ReorderProjectsDto): Promise<void> => {
+    await apiClient.post('/projects/reorder', dto);
   },
 };
