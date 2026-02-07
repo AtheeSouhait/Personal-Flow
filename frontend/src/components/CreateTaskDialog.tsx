@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { tasksApi } from '@/api/tasks'
 import {
@@ -19,14 +19,20 @@ interface CreateTaskDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   projectId: number
+  defaultStatus?: string
 }
 
-export function CreateTaskDialog({ open, onOpenChange, projectId }: CreateTaskDialogProps) {
+export function CreateTaskDialog({ open, onOpenChange, projectId, defaultStatus }: CreateTaskDialogProps) {
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
+  const [status, setStatus] = useState(defaultStatus ?? 'NotStarted')
   const [priority, setPriority] = useState('Medium')
   const [dueDate, setDueDate] = useState('')
   const queryClient = useQueryClient()
+
+  useEffect(() => {
+    if (defaultStatus) setStatus(defaultStatus)
+  }, [defaultStatus])
 
   const createMutation = useMutation({
     mutationFn: tasksApi.create,
@@ -34,6 +40,7 @@ export function CreateTaskDialog({ open, onOpenChange, projectId }: CreateTaskDi
       queryClient.invalidateQueries({ queryKey: ['projects', projectId.toString()] })
       setTitle('')
       setDescription('')
+      setStatus(defaultStatus ?? 'NotStarted')
       setPriority('Medium')
       setDueDate('')
       onOpenChange(false)
@@ -47,6 +54,7 @@ export function CreateTaskDialog({ open, onOpenChange, projectId }: CreateTaskDi
         title,
         description: description || undefined,
         projectId,
+        status,
         priority,
         dueDate: dueDate || undefined,
       })

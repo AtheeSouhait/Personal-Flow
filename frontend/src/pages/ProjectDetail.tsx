@@ -7,7 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Badge } from '@/components/ui/badge'
 import { Progress } from '@/components/ui/progress'
-import { TaskList } from '@/components/TaskList'
+import { KanbanBoard } from '@/components/KanbanBoard'
 import { IdeaList } from '@/components/IdeaList'
 import { useState } from 'react'
 import { CreateTaskDialog } from '@/components/CreateTaskDialog'
@@ -117,8 +117,8 @@ export default function ProjectDetail() {
           </div>
         </div>
 
-        <TabsContent value="tasks" className="space-y-4">
-          <TaskList tasks={project.tasks} projectId={project.id} />
+        <TabsContent value="tasks">
+          <KanbanBoard tasks={project.tasks} projectId={project.id} />
         </TabsContent>
 
         <TabsContent value="ideas" className="space-y-4">
