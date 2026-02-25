@@ -2,150 +2,155 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-## Project Overview
+## What this repo is (current)
 
-**PersonalFlow** is a self-hosted task tracker web application that enables users to manage personal and work projects, capture ideas, and track tasks through a modern, intuitive interface. Built with .NET 9 and C# for local deployment with persistent storage, it provides both a user-friendly web interface and REST API for programmatic access.
+**PersonalFlow** is a self-hosted, single-user task tracker with a .NET Web API backend and a React frontend. It supports projects, tasks (Kanban + progress), ideas, global search, and a “Daily ToDo” list.
 
-### Key Product Characteristics
-- **Single-user application** (no multi-user collaboration)
-- **Local deployment** (self-hosted, Docker containerized)
-- **Privacy-focused** (complete data ownership, no cloud dependencies)
-- **API-first design** (REST endpoints for all CRUD operations)
-- **Web-responsive** (accessible via localhost:3124, optimized for various screen sizes)
+**Default deployment** is via Docker Compose (API + nginx-served frontend) with SQLite persisted to disk.
 
 ## Tech Stack
 
-- **Framework**: .NET 9 with ASP.NET Core
-- **Language**: C#
-- **Database**: SQLite (lightweight, file-based persistence)
-- **Containerization**: Docker & Docker Compose
-- **API**: RESTful Web API (all CRUD operations, response time target: <200ms)
-- **ORM**: Entity Framework Core
-- **Frontend**: HTML/CSS/JavaScript (responsive design for tablets and smaller screens)
+### Backend
+- .NET 9 (ASP.NET Core Web API)
+- Entity Framework Core + SQLite
+- Swagger (dev only)
+
+### Frontend
+- React 18 + TypeScript
+- Vite
+- Tailwind CSS + shadcn/ui (Radix primitives)
+- TanStack Query
+- React Router
+- Axios API client
 
 ## Project Structure
 
 ```
 task-tracker/
 ├── src/
-│   └── TaskTracker.Api/          # Main ASP.NET Core API project
-├── docker-compose.yml             # Docker orchestration
-├── Dockerfile                      # Container image definition
-├── CLAUDE.md                       # This file
-└── README.md
+│   └── TaskTracker.Api/            # ASP.NET Core API project
+├── frontend/                       # React app (Vite), built into nginx for Docker
+├── docker-compose.yml              # Docker orchestration (api + frontend)
+├── Dockerfile                       # API container image
+├── start-task-tracker.sh            # Convenience script (local machine paths)
+├── API.md                           # API docs (may lag code)
+├── README.md                        # User-facing documentation
+└── CLAUDE.md                        # This file
 ```
 
-## Build and Test Commands
+## How to run
 
 ```bash
-# Build the project
-dotnet build
+# Docker (recommended)
+docker compose up -d
 
-# Run locally
-dotnet run --project src/TaskTracker.Api
-
-# Run tests
-dotnet test
-
-# Build Docker image
-docker build -t task-tracker:latest .
-
-# Run with Docker Compose
-docker-compose up -d
-
-# Stop containers
-docker-compose down
+# Stop
+docker compose down
 ```
 
-## Development Environment Setup
+### Ports (docker-compose.yml)
 
-1. Install .NET 9 SDK
-2. Install Docker Desktop
-3. Clone repository and run `dotnet restore`
-4. Run `docker-compose up` to start the application
+- Frontend UI: http://localhost:3007
+- API: http://localhost:3124
+- Swagger UI (Development): http://localhost:3124/swagger
 
-## Key Technical Decisions
+Docker port mappings today:
+- `frontend`: `3007:80` (nginx)
+- `api`: `3124:8080` (ASP.NET)
 
-- **SQLite** chosen for lightweight persistence without external dependencies
-- **Docker Compose** for local development parity with production
-- **Entity Framework Core** for data access and migrations
-- **Volume mounts** for persistent database file and development convenience
-- **Single-user architecture** (no authentication/authorization complexity)
-- **Markdown support** for project descriptions
-- **Auto-save functionality** to prevent data loss
+### Local development (without Docker)
 
-## Core Features Implementation Roadmap
+**Backend**
 
-### Phase 1: MVP Foundation (P0 - Core Features)
-- [x] Docker containerization with volume persistence
-- [ ] Project management (CRUD with markdown descriptions)
-- [ ] Task management (CRUD within projects, status tracking)
-- [ ] Visual progress tracking (sliding bar, status indicators: Not Started, In Progress, Completed, Blocked)
-- [ ] Ideas capture and linking to projects
-- [ ] REST API endpoints for all CRUD operations
+By default the API connection string points at `/app/data/tasktracker.db` (a Docker path). For local runs, override it:
 
-### Phase 2: Enhanced UX (P1 - Enhanced Features)
-- [ ] Search and filtering (projects, tasks, ideas)
-- [ ] Due date management and basic scheduling
-- [ ] Responsive design for tablets and smaller screens
-- [ ] Export functionality (projects and tasks)
+```bash
+ConnectionStrings__DefaultConnection="Data Source=./data/tasktracker.db" \
+  dotnet run --project src/TaskTracker.Api
+```
 
-### Phase 3: Polish & Integration (P2 - Nice-to-Have)
-- [ ] Task templates for recurring patterns
-- [ ] Basic reporting and analytics dashboard
-- [ ] Bulk operations
-- [ ] Dark/light theme toggle
+**Frontend**
 
-## Important Directories
+```bash
+cd frontend
+npm install
+npm run dev
+```
 
-- `src/TaskTracker.Api/Controllers/` - REST API endpoints for projects, tasks, ideas
-- `src/TaskTracker.Api/Services/` - Business logic layer
-- `src/TaskTracker.Api/Data/` - Entity Framework context and configurations
-- `src/TaskTracker.Api/Models/` - Domain models (Project, Task, Idea, etc.)
+Vite serves at http://localhost:5173 and proxies `/api` to `http://localhost:3124`.
 
-## Domain Models
+## Backend implementation notes
 
-Based on PRD requirements, implement the following core entities:
+- On startup the API runs EF Core migrations (`db.Database.Migrate()`).
+- SQLite DB path is configured in `src/TaskTracker.Api/appsettings*.json` as `/app/data/tasktracker.db`.
+- Ordering is implemented via `DisplayOrder` on Projects, Tasks, and DailyTodos. Reorder endpoints accept an ordered list of IDs and rewrite `DisplayOrder` accordingly.
 
-- **Project**: Title, description (markdown), creation date, status
-- **Task**: Title, description, project reference, status (Not Started, In Progress, Completed, Blocked), priority, progress percentage, due date
-- **Idea**: Title, description, project reference, creation date
+### Domain model (current)
 
-## API Endpoints
+- `Project` (`ProjectStatus`: `Active | Completed | Archived`)
+- `ProjectTask` (`TaskStatus`: `NotStarted | InProgress | Completed | Blocked`, `TaskPriority`: `Low | Medium | High | Critical`)
+- `Idea`
+- `DailyTodo`
 
-All endpoints should follow RESTful conventions and respond within 200ms:
+### API endpoints (current)
 
-- `GET /api/projects` - List all projects
-- `GET /api/projects/{id}` - Get project with tasks and ideas
-- `POST /api/projects` - Create project
-- `PUT /api/projects/{id}` - Update project
-- `DELETE /api/projects/{id}` - Delete project
-- `GET /api/tasks` - List all tasks
-- `GET /api/tasks?projectId={id}` - Filter tasks by project
-- `POST /api/tasks` - Create task
-- `PUT /api/tasks/{id}` - Update task (including progress)
-- `DELETE /api/tasks/{id}` - Delete task
-- `GET /api/ideas` - List all ideas
-- `GET /api/ideas?projectId={id}` - Filter ideas by project
-- `POST /api/ideas` - Create idea
-- `PUT /api/ideas/{id}` - Update idea
-- `DELETE /api/ideas/{id}` - Delete idea
-- `GET /api/search?q={query}` - Search across projects, tasks, and ideas
+Base URL: `http://localhost:3124/api`
 
-## Database
+- **Projects**
+  - `GET /api/projects`
+  - `GET /api/projects/{id}` (includes tasks + ideas)
+  - `POST /api/projects`
+  - `PUT /api/projects/{id}`
+  - `DELETE /api/projects/{id}`
+  - `POST /api/projects/reorder` (`{ projectIds: number[] }`)
 
-Database file stored in Docker volume for persistence between container restarts. Initial migrations run automatically on startup.
+- **Tasks**
+  - `GET /api/tasks?projectId={id?}`
+  - `GET /api/tasks/{id}`
+  - `POST /api/tasks`
+  - `PUT /api/tasks/{id}`
+  - `DELETE /api/tasks/{id}`
+  - `POST /api/tasks/reorder` (`{ taskIds: number[] }`)
 
-### Entity Relationships
-- Project has many Tasks (1:N)
-- Project has many Ideas (1:N)
-- Task belongs to one Project (N:1)
-- Idea belongs to one Project (N:1)
+- **Ideas**
+  - `GET /api/ideas?projectId={id?}`
+  - `GET /api/ideas/{id}`
+  - `POST /api/ideas`
+  - `PUT /api/ideas/{id}`
+  - `DELETE /api/ideas/{id}`
 
-## Success Metrics & Performance Requirements
+- **Daily todos**
+  - `GET /api/daily-todos`
+  - `GET /api/daily-todos/{id}`
+  - `POST /api/daily-todos`
+  - `PUT /api/daily-todos/{id}`
+  - `DELETE /api/daily-todos/{id}`
+  - `POST /api/daily-todos/reorder` (`{ todoIds: number[] }`)
 
-- User creates first project within 5 minutes of setup
-- API endpoints respond within 200ms for standard operations
-- Zero data loss during container restarts (volume persistence)
-- Auto-save prevents data loss during unexpected interruptions
-- Responsive design works on tablets (768px+) and larger screens
+- **Search**
+  - `GET /api/search?q={query}`
+
+- **TTS proxy (optional integration)**
+  - `POST /api/tts/synthesize` (returns `audio/wav`)
+  - Proxies to `http://host.docker.internal:8080/synthesize` (expects a host-side service). If unavailable, the API returns 503/504.
+
+## Frontend implementation notes
+
+- Routes:
+  - `/` → dashboard (project list + Daily ToDo)
+  - `/projects/:id` → project detail (Kanban tasks + ideas)
+- API client:
+  - `frontend/src/api/client.ts` uses `VITE_API_URL` (defaults to `http://localhost:3124/api`)
+  - Local dev also supports calling `/api` thanks to the Vite proxy in `frontend/vite.config.ts`
+  - Docker frontend nginx also proxies `/api` to the API container (`frontend/nginx.conf`)
+- TypeScript types live in `frontend/src/types/index.ts` and should stay consistent with backend DTOs/enums.
+
+## Docker persistence (current)
+
+`docker-compose.yml` bind-mounts a host folder to `/app/data` in the API container (currently `/mnt/2TO_Projets/Programmation/docker_volumes/task-tracker:/app/data`). If you run on a different machine, you’ll likely need to change the host path.
+
+## Common gotchas
+
+- `docker-compose.yml` currently exposes the UI on `http://localhost:3007` (not `:3000`).
+- Enum values are serialized as strings; keep backend enums and frontend union types aligned (`NotStarted`, not `"Not Started"`).
+- Reorder endpoints expect full ordered ID lists; they do not accept partial reorder patches.

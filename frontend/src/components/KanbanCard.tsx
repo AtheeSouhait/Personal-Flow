@@ -10,6 +10,13 @@ const priorityColors = {
   Critical: 'text-red-500',
 }
 
+const priorityStripeColors = {
+  Low: 'bg-gray-400',
+  Medium: 'bg-blue-500',
+  High: 'bg-orange-500',
+  Critical: 'bg-red-500',
+}
+
 const progressBarColors = {
   NotStarted: 'bg-gray-400',
   InProgress: 'bg-blue-500',
@@ -71,12 +78,14 @@ export function KanbanCard({
         onDrop={(e) => { e.stopPropagation(); onDrop(e, task) }}
         onClick={() => onClick(task)}
         className={`
-          bg-card border rounded-lg p-3 cursor-pointer select-none
+          bg-card border rounded-lg overflow-hidden cursor-pointer select-none
           hover:border-primary/50 hover:shadow-sm
-          transition-all duration-200 ease-out
+          transition-all duration-200 ease-out flex
           ${isDragging ? 'opacity-30 scale-[0.97] border-dashed border-primary/40' : ''}
         `}
       >
+        <div className={`w-1 flex-shrink-0 rounded-l-lg ${priorityStripeColors[task.priority]}`} />
+        <div className="flex-1 p-3">
         <div className="flex items-start gap-2 mb-1">
           <span className="text-sm font-medium flex-1 line-clamp-2">{task.title}</span>
           <Flag className={`h-3.5 w-3.5 flex-shrink-0 mt-0.5 ${priorityColors[task.priority]}`} />
@@ -97,6 +106,7 @@ export function KanbanCard({
             {format(new Date(task.dueDate), 'MMM d')}
           </div>
         )}
+        </div>
       </div>
 
       {/* Animated gap after card */}

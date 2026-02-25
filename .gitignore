@@ -11,7 +11,7 @@ obj/
 *.db-shm
 *.db-wal
 PRD.md
-
+*.zip
 # Node
 node_modules/
 dist/

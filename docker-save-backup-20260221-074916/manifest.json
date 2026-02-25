@@ -1,0 +1,41 @@
+{
+  "version": 1,
+  "generatedAt": "2026-02-21T06:41:27.4757993+00:00",
+  "config": {
+    "kind": "compose",
+    "fileName": "docker-compose.yml",
+    "projectName": "task-tracker"
+  },
+  "images": [
+    {
+      "image": "task-tracker-api",
+      "archive": "images/task-tracker-api.zip"
+    },
+    {
+      "image": "task-tracker-frontend",
+      "archive": "images/task-tracker-frontend.zip"
+    }
+  ],
+  "binds": [
+    {
+      "id": "bind_0",
+      "originalSource": "/mnt/2TO_Projets/Programmation/docker_volumes/task-tracker",
+      "targets": [
+        "/app/data"
+      ],
+      "suggestedName": "task-tracker_0",
+      "archive": "binds/task-tracker_0.zip"
+    }
+  ],
+  "volumes": [],
+  "services": {
+    "api": [
+      {
+        "type": "bind",
+        "source": "/mnt/2TO_Projets/Programmation/docker_volumes/task-tracker",
+        "target": "/app/data",
+        "readOnly": false
+      }
+    ]
+  }
+}
