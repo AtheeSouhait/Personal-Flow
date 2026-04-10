@@ -176,6 +176,7 @@ export default function NextTasks() {
                 setSelectedTask(task)
                 setIsTaskDetailOpen(true)
               }}
+              showProjectLink={true}
             />
           ))
         )}

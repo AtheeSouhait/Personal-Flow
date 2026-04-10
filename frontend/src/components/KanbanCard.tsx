@@ -24,6 +24,8 @@ const progressBarColors = {
   Blocked: 'bg-red-500',
 }
 
+import { Link } from 'react-router-dom'
+
 export interface DragPosition {
   taskId: number
   position: 'before' | 'after'
@@ -38,6 +40,7 @@ interface KanbanCardProps {
   onDragOver: (e: React.DragEvent, task: Task) => void
   onDrop: (e: React.DragEvent, task: Task) => void
   onClick: (task: Task) => void
+  showProjectLink?: boolean
 }
 
 export function KanbanCard({
@@ -49,6 +52,7 @@ export function KanbanCard({
   onDragOver,
   onDrop,
   onClick,
+  showProjectLink,
 }: KanbanCardProps) {
   const cardRef = useRef<HTMLDivElement>(null)
   const showBeforeGap = dropIndicator?.taskId === task.id && dropIndicator.position === 'before'
@@ -87,7 +91,22 @@ export function KanbanCard({
         <div className={`w-1 flex-shrink-0 rounded-l-lg ${priorityStripeColors[task.priority]}`} />
         <div className="flex-1 p-3">
         <div className="flex items-start gap-2 mb-1">
-          <span className="text-sm font-medium flex-1 line-clamp-2">{task.title}</span>
+          <span className="text-sm font-medium flex-1 line-clamp-2">
+            {task.title}
+            {showProjectLink && task.projectTitle && (
+              <span className="ml-1 text-muted-foreground font-normal text-xs whitespace-nowrap">
+                (
+                <Link
+                  to={`/projects/${task.projectId}`}
+                  className="hover:underline hover:text-primary transition-colors"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  {task.projectTitle}
+                </Link>
+                )
+              </span>
+            )}
+          </span>
           <Flag className={`h-3.5 w-3.5 flex-shrink-0 mt-0.5 ${priorityColors[task.priority]}`} />
         </div>
 
