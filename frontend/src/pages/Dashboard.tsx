@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge'
 import { Progress } from '@/components/ui/progress'
 import { CheckCircle2, GripVertical, Lightbulb, ListTodo } from 'lucide-react'
 import DailyTodoList from '@/components/DailyTodoList'
+import NextTasks from '@/components/NextTasks'
 import type { Project } from '@/types'
 
 export default function Dashboard() {
@@ -85,8 +86,8 @@ export default function Dashboard() {
       </div>
 
       <div className="flex gap-6">
-        {/* Projects section - 2/3 width */}
-        <div className="flex-1 w-2/3">
+        {/* Projects section */}
+        <div className="flex-[2] min-w-[400px] overflow-y-auto pr-2 pb-4">
           <div className="grid gap-6 md:grid-cols-1 lg:grid-cols-2 xl:grid-cols-2">
             {projects.map((project) => (
               <div
@@ -166,8 +167,13 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {/* Daily Todo section - 1/3 width */}
-        <div className="w-1/3 min-w-[320px]">
+        {/* Next Tasks section */}
+        <div className="flex-1 min-w-[300px]">
+          <NextTasks />
+        </div>
+
+        {/* Daily Todo section */}
+        <div className="flex-1 min-w-[300px]">
           <DailyTodoList />
         </div>
       </div>
