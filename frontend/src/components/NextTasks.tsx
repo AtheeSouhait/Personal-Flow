@@ -1,10 +1,14 @@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { tasksApi } from '@/api/tasks'
+import { dailyTodosApi } from '@/api/dailyTodos'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { TaskDetailDialog } from '@/components/TaskDetailDialog'
 import { KanbanCard, type DragPosition } from '@/components/KanbanCard'
+import { PinOff } from 'lucide-react'
+import { Button } from '@/components/ui/button'
 import type { Task } from '@/types'
+import { usePinnedTodos } from '@/context/PinnedTodosContext'
 
 export default function NextTasks() {
   const queryClient = useQueryClient()
@@ -12,11 +16,19 @@ export default function NextTasks() {
   const [dropIndicator, setDropIndicator] = useState<DragPosition | null>(null)
   const [selectedTask, setSelectedTask] = useState<Task | null>(null)
   const [isTaskDetailOpen, setIsTaskDetailOpen] = useState(false)
+  const { pinnedIds, toggle: togglePin } = usePinnedTodos()
 
   const { data: allTasks = [], isLoading } = useQuery({
     queryKey: ['tasks'],
     queryFn: () => tasksApi.getAll(),
   })
+
+  const { data: allDailyTodos = [] } = useQuery({
+    queryKey: ['dailyTodos'],
+    queryFn: dailyTodosApi.getAll,
+  })
+
+  const pinnedTodos = allDailyTodos.filter(t => pinnedIds.has(t.id))
 
   // Filter out completed and blocked, then initial sort if displayOrder isn't really used yet (wait, displayOrder is saved on backend)
   // Reordering changes displayOrder, so we rely on displayOrder primarily.
@@ -157,11 +169,35 @@ export default function NextTasks() {
         <CardTitle>Next Tasks</CardTitle>
       </CardHeader>
       <CardContent className="flex-1 overflow-y-auto space-y-2">
-        {sortedTasks.length === 0 ? (
+        {pinnedTodos.length > 0 && (
+          <div className="space-y-1 pb-2 border-b border-border">
+            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide px-1">Daily Todos</p>
+            {pinnedTodos.map(todo => (
+              <div
+                key={`todo-${todo.id}`}
+                className="flex items-center gap-2 px-3 py-2 rounded-md border border-blue-500/30 bg-blue-950/20 hover:bg-blue-950/30 transition-colors"
+              >
+                <span className={`flex-1 text-sm ${todo.isCompleted ? 'line-through text-muted-foreground' : 'text-foreground'}`}>
+                  {todo.title}
+                </span>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => togglePin(todo.id)}
+                  title="Remove from Next Tasks"
+                  className="h-6 w-6 p-0 text-amber-400/70 hover:text-amber-400 hover:bg-amber-500/10 flex-shrink-0"
+                >
+                  <PinOff className="h-3 w-3" />
+                </Button>
+              </div>
+            ))}
+          </div>
+        )}
+        {sortedTasks.length === 0 && pinnedTodos.length === 0 ? (
           <div className="text-center text-muted-foreground py-8">
             No pending tasks.
           </div>
-        ) : (
+        ) : sortedTasks.length === 0 ? null : (
           sortedTasks.map((task) => (
             <KanbanCard
               key={task.id}

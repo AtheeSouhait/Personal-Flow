@@ -6,11 +6,13 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Checkbox } from '@/components/ui/checkbox'
-import { Plus, Trash2, GripVertical, Pencil, X, Check } from 'lucide-react'
+import { Plus, Trash2, GripVertical, Pencil, X, Check, Pin, PinOff } from 'lucide-react'
 import type { DailyTodo } from '@/types'
+import { usePinnedTodos } from '@/context/PinnedTodosContext'
 
 export default function DailyTodoList() {
   const queryClient = useQueryClient()
+  const { isPinned, toggle: togglePin } = usePinnedTodos()
   const [newTodoTitle, setNewTodoTitle] = useState('')
   const [newTodoDescription, setNewTodoDescription] = useState('')
   const [editingId, setEditingId] = useState<number | null>(null)
@@ -253,6 +255,19 @@ export default function DailyTodoList() {
 
                 {editingId !== todo.id && (
                   <div className="flex gap-1 flex-shrink-0">
+                    <Button
+                      onClick={() => togglePin(todo.id)}
+                      size="sm"
+                      variant="ghost"
+                      title={isPinned(todo.id) ? 'Remove from Next Tasks' : 'Add to Next Tasks'}
+                      className={`h-8 w-8 p-0 hover:bg-blue-500/20 ${
+                        isPinned(todo.id)
+                          ? 'text-amber-400 hover:text-amber-300'
+                          : 'text-blue-400/50 hover:text-blue-300'
+                      }`}
+                    >
+                      {isPinned(todo.id) ? <PinOff className="h-4 w-4" /> : <Pin className="h-4 w-4" />}
+                    </Button>
                     <Button
                       onClick={() => handleStartEdit(todo)}
                       size="sm"
