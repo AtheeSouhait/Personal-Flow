@@ -125,7 +125,7 @@ export default function DailyTodoList() {
 
   if (isLoading) {
     return (
-      <Card className="h-full bg-gradient-to-br from-slate-900 via-blue-950 to-slate-900 border-2 border-blue-600 shadow-[0_0_20px_rgba(37,99,235,0.3)]">
+      <Card className="bg-gradient-to-br from-slate-900 via-blue-950 to-slate-900 border-2 border-blue-600 shadow-[0_0_20px_rgba(37,99,235,0.3)]">
         <CardHeader className="border-b border-blue-500/30 bg-gradient-to-b from-blue-900/30 to-transparent">
           <CardTitle className="text-blue-400 font-bold tracking-wide" style={{ textShadow: '0 0 10px rgba(96,165,250,0.5), 0 0 20px rgba(96,165,250,0.3)' }}>
             Daily ToDo
@@ -139,13 +139,13 @@ export default function DailyTodoList() {
   }
 
   return (
-    <Card className="h-full flex flex-col bg-gradient-to-br from-slate-900 via-blue-950 to-slate-900 border-2 border-blue-600 shadow-[0_0_20px_rgba(37,99,235,0.3),0_0_40px_rgba(37,99,235,0.1)]">
+    <Card className="bg-gradient-to-br from-slate-900 via-blue-950 to-slate-900 border-2 border-blue-600 shadow-[0_0_20px_rgba(37,99,235,0.3),0_0_40px_rgba(37,99,235,0.1)]">
       <CardHeader className="border-b border-blue-500/30 bg-gradient-to-b from-blue-900/30 to-transparent">
         <CardTitle className="text-blue-100 font-bold tracking-wide" style={{ textShadow: '0 0 10px rgba(96,165,250,0.55), 0 0 22px rgba(96,165,250,0.3)' }}>
           Daily ToDo
         </CardTitle>
       </CardHeader>
-      <CardContent className="flex-1 space-y-4 overflow-y-auto">
+      <CardContent className="space-y-4">
         {/* Add new todo */}
         <div className="space-y-2 pb-4 border-b border-blue-500/30">
           <Input

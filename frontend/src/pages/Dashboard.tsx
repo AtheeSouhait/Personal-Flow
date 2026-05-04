@@ -86,103 +86,100 @@ export default function Dashboard() {
         </div>
       </div>
 
-      <div className="grid gap-6 xl:grid-cols-[minmax(400px,2fr)_minmax(320px,1fr)]">
-        {/* Projects section */}
-        <div className="min-w-0 overflow-y-auto pr-2 pb-4">
-          <div className="grid gap-6 md:grid-cols-1 lg:grid-cols-2 xl:grid-cols-2">
-            {projects.map((project) => (
-              <div
-                key={project.id}
-                draggable
-                onDragStart={() => handleDragStart(project)}
-                onDragOver={handleDragOver}
-                onDrop={() => handleDrop(project)}
-                onDragEnd={handleDragEnd}
-                className={`transition-opacity ${draggedItem?.id === project.id ? 'opacity-50' : ''}`}
-              >
-              <Link to={`/projects/${project.id}`}>
-                <Card className="hover:shadow-lg transition-shadow cursor-pointer h-full">
-                  <CardHeader>
-                    <div className="flex items-start justify-between">
-                      <div className="flex items-center gap-1">
-                        <GripVertical
-                          className="h-5 w-5 text-muted-foreground/50 flex-shrink-0 cursor-grab"
-                          onMouseDown={(e) => e.stopPropagation()}
-                        />
-                        <CardTitle className="line-clamp-1">{project.title}</CardTitle>
-                      </div>
-                      <Badge
-                        variant={project.status === 'Active' ? 'default' : 'secondary'}
-                        className="ml-2"
-                      >
-                        {project.status}
-                      </Badge>
-                    </div>
-                    {project.description && (
-                      <CardDescription className="line-clamp-2">
-                        {project.description}
-                      </CardDescription>
-                    )}
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div>
-                      <div className="flex items-center justify-between text-sm mb-2">
-                        <span className="text-muted-foreground">Progress</span>
-                        <span className="font-medium">{Math.round(project.progressPercentage)}%</span>
-                      </div>
-                      <Progress value={project.progressPercentage} />
-                    </div>
-
-                    <div className="grid grid-cols-3 gap-4 text-sm">
-                      <div className="flex items-center space-x-2">
-                        <ListTodo className="h-4 w-4 text-blue-500" />
-                        <div>
-                          <p className="font-medium">{project.taskCount}</p>
-                          <p className="text-xs text-muted-foreground">Tasks</p>
-                        </div>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <CheckCircle2 className="h-4 w-4 text-green-500" />
-                        <div>
-                          <p className="font-medium">{project.completedTaskCount}</p>
-                          <p className="text-xs text-muted-foreground">Done</p>
-                        </div>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <Lightbulb className="h-4 w-4 text-amber-500" />
-                        <div>
-                          <p className="font-medium">{project.ideaCount}</p>
-                          <p className="text-xs text-muted-foreground">Ideas</p>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="text-xs text-muted-foreground">
-                      Updated {new Date(project.updatedAt).toLocaleDateString()}
-                    </div>
-                  </CardContent>
-                </Card>
-              </Link>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        <div className="space-y-6">
-          <div className="grid gap-6 lg:grid-cols-2 xl:grid-cols-1">
-            {/* Next Tasks section */}
-            <div className="min-w-0">
-              <NextTasks />
-            </div>
-
-            {/* Daily Todo section */}
-            <div className="min-w-0">
-              <DailyTodoList />
-            </div>
-          </div>
-
+      <div className="grid items-start gap-6 2xl:grid-cols-[minmax(360px,1fr)_minmax(320px,0.85fr)_minmax(380px,1fr)] xl:grid-cols-[minmax(340px,1fr)_minmax(300px,0.85fr)_minmax(360px,1fr)]">
+        {/* Activity section */}
+        <div className="min-w-0">
           <ActivityTracker />
         </div>
+
+        {/* Daily Todo section */}
+        <div className="min-w-0">
+          <DailyTodoList />
+        </div>
+
+        {/* Next Tasks section */}
+        <div className="min-w-0">
+          <NextTasks />
+        </div>
+      </div>
+
+      {/* Projects section */}
+      <div className="grid items-start gap-6 md:grid-cols-2 2xl:grid-cols-3">
+        {projects.map((project) => (
+          <div
+            key={project.id}
+            draggable
+            onDragStart={() => handleDragStart(project)}
+            onDragOver={handleDragOver}
+            onDrop={() => handleDrop(project)}
+            onDragEnd={handleDragEnd}
+            className={`transition-opacity ${draggedItem?.id === project.id ? 'opacity-50' : ''}`}
+          >
+            <Link to={`/projects/${project.id}`}>
+              <Card className="hover:shadow-lg transition-shadow cursor-pointer">
+                <CardHeader>
+                  <div className="flex items-start justify-between">
+                    <div className="flex items-center gap-1">
+                      <GripVertical
+                        className="h-5 w-5 text-muted-foreground/50 flex-shrink-0 cursor-grab"
+                        onMouseDown={(e) => e.stopPropagation()}
+                      />
+                      <CardTitle className="line-clamp-1">{project.title}</CardTitle>
+                    </div>
+                    <Badge
+                      variant={project.status === 'Active' ? 'default' : 'secondary'}
+                      className="ml-2"
+                    >
+                      {project.status}
+                    </Badge>
+                  </div>
+                  {project.description && (
+                    <CardDescription className="line-clamp-2">
+                      {project.description}
+                    </CardDescription>
+                  )}
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div>
+                    <div className="flex items-center justify-between text-sm mb-2">
+                      <span className="text-muted-foreground">Progress</span>
+                      <span className="font-medium">{Math.round(project.progressPercentage)}%</span>
+                    </div>
+                    <Progress value={project.progressPercentage} />
+                  </div>
+
+                  <div className="grid grid-cols-3 gap-4 text-sm">
+                    <div className="flex items-center space-x-2">
+                      <ListTodo className="h-4 w-4 text-blue-500" />
+                      <div>
+                        <p className="font-medium">{project.taskCount}</p>
+                        <p className="text-xs text-muted-foreground">Tasks</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <CheckCircle2 className="h-4 w-4 text-green-500" />
+                      <div>
+                        <p className="font-medium">{project.completedTaskCount}</p>
+                        <p className="text-xs text-muted-foreground">Done</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <Lightbulb className="h-4 w-4 text-amber-500" />
+                      <div>
+                        <p className="font-medium">{project.ideaCount}</p>
+                        <p className="text-xs text-muted-foreground">Ideas</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="text-xs text-muted-foreground">
+                    Updated {new Date(project.updatedAt).toLocaleDateString()}
+                  </div>
+                </CardContent>
+              </Card>
+            </Link>
+          </div>
+        ))}
       </div>
     </div>
   )

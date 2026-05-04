@@ -271,7 +271,7 @@ export default function ActivityTracker() {
   }
 
   return (
-    <Card className="h-full overflow-hidden border-amber-900/30 bg-[linear-gradient(180deg,#f7edcf_0%,#ead8af_100%)] shadow-md dark:border-amber-700/40 dark:bg-[linear-gradient(180deg,#21170f_0%,#130e0a_100%)]">
+    <Card className="overflow-hidden border-amber-900/30 bg-[linear-gradient(180deg,#f7edcf_0%,#ead8af_100%)] shadow-md dark:border-amber-700/40 dark:bg-[linear-gradient(180deg,#21170f_0%,#130e0a_100%)]">
       <CardHeader className="border-b border-amber-900/20 bg-[linear-gradient(135deg,#5d2f1f_0%,#9f6b2e_60%,#d5a94a_100%)] text-amber-50 dark:border-amber-500/20">
         <div className="flex items-center justify-between gap-3">
           <div>
@@ -306,7 +306,7 @@ export default function ActivityTracker() {
           </Button>
         </div>
 
-        <div className="space-y-3 max-h-[620px] overflow-y-auto pr-1">
+        <div className="space-y-3 pr-1">
           {activities.length === 0 && (
             <p className="rounded-md border border-dashed border-amber-900/30 bg-amber-50/60 p-4 text-sm text-muted-foreground dark:bg-black/20">
               Aucune activité pour cette date.

@@ -9,6 +9,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 **Default deployment** is via Docker Compose (API + nginx-served frontend) with SQLite persisted to disk.
 
 ## Tech Stack
+DOCKER
 
 ### Backend
 - .NET 9 (ASP.NET Core Web API)
@@ -37,6 +38,8 @@ task-tracker/
 ├── README.md                        # User-facing documentation
 └── CLAUDE.md                        # This file
 ```
+## How to build
+docker compose up -d --build
 
 ## How to run
 

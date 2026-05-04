@@ -152,7 +152,7 @@ export default function NextTasks() {
 
   if (isLoading) {
     return (
-      <Card className="h-full bg-card">
+      <Card className="bg-card">
         <CardHeader>
           <CardTitle>Next Tasks</CardTitle>
         </CardHeader>
@@ -164,11 +164,11 @@ export default function NextTasks() {
   }
 
   return (
-    <Card className="h-full flex flex-col">
+    <Card>
       <CardHeader>
         <CardTitle>Next Tasks</CardTitle>
       </CardHeader>
-      <CardContent className="flex-1 overflow-y-auto space-y-2">
+      <CardContent className="space-y-2">
         {pinnedTodos.length > 0 && (
           <div className="space-y-1 pb-2 border-b border-border">
             <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide px-1">Daily Todos</p>
