@@ -18,9 +18,16 @@ type ActivityEntry = {
 
 type ActivityByDate = Record<string, ActivityEntry[]>
 
+type RunningTimer = {
+  date: string
+  activityId: string
+}
+
 const STORAGE_KEY = 'activity-tracker-v1'
 
 const activityAccents = ['#6f6ab7', '#d79a4b', '#4ba9bd', '#b85a57', '#7aa66a']
+
+const getTimerKey = (timer: RunningTimer) => `${timer.date}:${timer.activityId}`
 
 const isValidDuration = (duration: string) => /^\d{1,3}:[0-5]\d$/.test(duration)
 
@@ -77,7 +84,7 @@ export default function ActivityTracker() {
   const [noteDraft, setNoteDraft] = useState<Record<string, string>>({})
   const [editingNote, setEditingNote] = useState<Record<string, number | null>>({})
   const [activitiesByDate, setActivitiesByDate] = useState<ActivityByDate>({})
-  const [runningTimer, setRunningTimer] = useState<{ date: string, activityId: string } | null>(null)
+  const [runningTimers, setRunningTimers] = useState<RunningTimer[]>([])
   const [isHydrated, setIsHydrated] = useState(false)
   const [detailsActivityId, setDetailsActivityId] = useState<string | null>(null)
   const [goalEditorActivityId, setGoalEditorActivityId] = useState<string | null>(null)
@@ -109,26 +116,37 @@ export default function ActivityTracker() {
   }, [activitiesByDate, isHydrated])
 
   useEffect(() => {
-    if (!runningTimer) return
+    if (runningTimers.length === 0) return
 
     const interval = window.setInterval(() => {
-      setActivitiesByDate(prev => ({
-        ...prev,
-        [runningTimer.date]: (prev[runningTimer.date] ?? []).map((entry) => {
-          if (entry.id !== runningTimer.activityId) return entry
+      const timerIdsByDate = runningTimers.reduce<Record<string, Set<string>>>((byDate, timer) => {
+        byDate[timer.date] = byDate[timer.date] ?? new Set<string>()
+        byDate[timer.date].add(timer.activityId)
+        return byDate
+      }, {})
 
-          const nextSeconds = (entry.elapsedSeconds ?? durationToSeconds(entry.duration)) + 1
-          return {
-            ...entry,
-            duration: secondsToDuration(nextSeconds),
-            elapsedSeconds: nextSeconds,
-          }
-        }),
-      }))
+      setActivitiesByDate(prev => {
+        const next = { ...prev }
+
+        Object.entries(timerIdsByDate).forEach(([date, activityIds]) => {
+          next[date] = (prev[date] ?? []).map((entry) => {
+            if (!activityIds.has(entry.id)) return entry
+
+            const nextSeconds = (entry.elapsedSeconds ?? durationToSeconds(entry.duration)) + 1
+            return {
+              ...entry,
+              duration: secondsToDuration(nextSeconds),
+              elapsedSeconds: nextSeconds,
+            }
+          })
+        })
+
+        return next
+      })
     }, 1000)
 
     return () => window.clearInterval(interval)
-  }, [runningTimer])
+  }, [runningTimers])
 
   const activities = useMemo(() => activitiesByDate[selectedDate] ?? [], [activitiesByDate, selectedDate])
 
@@ -190,7 +208,7 @@ export default function ActivityTracker() {
   }
 
   const deleteActivity = (activityId: string) => {
-    setRunningTimer(prev => prev?.activityId === activityId && prev.date === selectedDate ? null : prev)
+    setRunningTimers(prev => prev.filter(timer => timer.activityId !== activityId || timer.date !== selectedDate))
     setActivitiesByDate(prev => ({
       ...prev,
       [selectedDate]: (prev[selectedDate] ?? []).filter(entry => entry.id !== activityId),
@@ -198,10 +216,13 @@ export default function ActivityTracker() {
   }
 
   const toggleTimer = (activityId: string) => {
-    setRunningTimer(prev => (
-      prev?.activityId === activityId && prev.date === selectedDate
-        ? null
-        : { date: selectedDate, activityId }
+    const timer = { date: selectedDate, activityId }
+    const timerKey = getTimerKey(timer)
+
+    setRunningTimers(prev => (
+      prev.some(candidate => getTimerKey(candidate) === timerKey)
+        ? prev.filter(candidate => getTimerKey(candidate) !== timerKey)
+        : [...prev, timer]
     ))
   }
 
@@ -349,7 +370,7 @@ export default function ActivityTracker() {
 
           {activities.map((entry, index) => {
             const accent = activityAccents[index % activityAccents.length]
-            const isRunning = runningTimer?.activityId === entry.id && runningTimer.date === selectedDate
+            const isRunning = runningTimers.some(timer => timer.activityId === entry.id && timer.date === selectedDate)
             const progress = getGoalProgress(entry)
             const circleStyle = {
               background: entry.goalSeconds
