@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { BarChart3, Clock3, NotebookPen, Play, Plus, Save, SlidersHorizontal, Square, TimerReset, Trash2, X } from 'lucide-react'
+import { BarChart3, Clock3, NotebookPen, PencilLine, Play, Plus, Save, SlidersHorizontal, Square, TimerReset, Trash2, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -82,6 +82,8 @@ export default function ActivityTracker() {
   const [detailsActivityId, setDetailsActivityId] = useState<string | null>(null)
   const [goalEditorActivityId, setGoalEditorActivityId] = useState<string | null>(null)
   const [goalDraft, setGoalDraft] = useState<Record<string, { duration: string, period: 'daily' | 'weekly', type: 'target' | 'limit' }>>({})
+  const [timeEditorActivityId, setTimeEditorActivityId] = useState<string | null>(null)
+  const [timeDraft, setTimeDraft] = useState<Record<string, string>>({})
 
   useEffect(() => {
     const raw = localStorage.getItem(STORAGE_KEY)
@@ -238,6 +240,27 @@ export default function ActivityTracker() {
     setGoalEditorActivityId(null)
   }
 
+  const openTimeEditor = (entry: ActivityEntry) => {
+    setTimeEditorActivityId(prev => prev === entry.id ? null : entry.id)
+    setTimeDraft(prev => ({
+      ...prev,
+      [entry.id]: secondsToDuration(entry.elapsedSeconds ?? durationToSeconds(entry.duration)),
+    }))
+  }
+
+  const saveLoggedTime = (activityId: string) => {
+    const draft = timeDraft[activityId]
+    if (!draft || !isValidDuration(draft)) return
+
+    const nextSeconds = durationToSeconds(draft)
+    updateActivity(activityId, (entry) => ({
+      ...entry,
+      duration: secondsToDuration(nextSeconds),
+      elapsedSeconds: nextSeconds,
+    }))
+    setTimeEditorActivityId(null)
+  }
+
   const upsertNote = (activityId: string) => {
     const draft = (noteDraft[activityId] ?? '').trim()
     if (!draft) return
@@ -287,6 +310,17 @@ export default function ActivityTracker() {
       </CardHeader>
 
       <CardContent className="space-y-4 p-4">
+        <datalist id="activity-duration-presets">
+          <option value="00:15" />
+          <option value="00:30" />
+          <option value="00:45" />
+          <option value="01:00" />
+          <option value="01:30" />
+          <option value="02:00" />
+          <option value="03:00" />
+          <option value="04:00" />
+        </datalist>
+
         <div className="grid gap-2 rounded-md border border-amber-900/20 bg-amber-50/70 p-3 shadow-inner dark:border-amber-500/20 dark:bg-black/20">
           <label className="text-xs font-medium text-muted-foreground">Date</label>
           <Input type="date" value={selectedDate} onChange={(e) => setSelectedDate(e.target.value)} />
@@ -370,6 +404,16 @@ export default function ActivityTracker() {
                     >
                       <TimerReset className="h-5 w-5" />
                     </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => openTimeEditor(entry)}
+                      title="Edit logged time"
+                      className="h-8 w-8"
+                      style={{ color: accent }}
+                    >
+                      <PencilLine className="h-4 w-4" />
+                    </Button>
                     <Button variant="ghost" size="icon" onClick={() => deleteActivity(entry.id)} title="Delete" className="h-8 w-8">
                       <Trash2 className="h-4 w-4 text-red-600" />
                     </Button>
@@ -390,6 +434,31 @@ export default function ActivityTracker() {
                     )}
                   </Button>
                 </div>
+
+                {timeEditorActivityId === entry.id && (
+                  <div className="grid gap-2 border-t border-amber-900/10 bg-[#f3e4bd] p-3 md:grid-cols-[160px_1fr_auto_auto] md:items-end dark:border-amber-500/15 dark:bg-stone-900/75">
+                    <div className="grid gap-1">
+                      <label className="text-xs font-medium text-muted-foreground">Temps passé</label>
+                      <Input
+                        inputMode="numeric"
+                        list="activity-duration-presets"
+                        pattern="\\d{1,3}:[0-5]\\d"
+                        placeholder="01:30"
+                        value={timeDraft[entry.id] ?? secondsToDuration(entry.elapsedSeconds ?? durationToSeconds(entry.duration))}
+                        onChange={(e) => setTimeDraft(prev => ({ ...prev, [entry.id]: e.target.value }))}
+                      />
+                    </div>
+                    <p className="text-xs text-stone-600 dark:text-amber-100/65">
+                      Le timer repartira de cette valeur.
+                    </p>
+                    <Button size="icon" onClick={() => saveLoggedTime(entry.id)} title="Save logged time">
+                      <Save className="h-4 w-4" />
+                    </Button>
+                    <Button size="icon" variant="outline" onClick={() => setTimeEditorActivityId(null)} title="Cancel">
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </div>
+                )}
 
                 {goalEditorActivityId === entry.id && (
                   <div className="grid gap-2 border-t border-amber-900/10 bg-amber-50/80 p-3 md:grid-cols-[110px_1fr_1fr_auto_auto] md:items-end dark:border-amber-500/15 dark:bg-stone-900/70">

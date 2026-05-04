@@ -8,7 +8,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 **Default deployment** is via Docker Compose (API + nginx-served frontend) with SQLite persisted to disk.
 
+# BUILD
+use docker do compile or build
+
 ## Tech Stack
+
 DOCKER
 
 ### Backend
