@@ -19,6 +19,7 @@ builder.Services.AddScoped<ITaskService, TaskService>();
 builder.Services.AddScoped<IIdeaService, IdeaService>();
 builder.Services.AddScoped<ISearchService, SearchService>();
 builder.Services.AddScoped<IDailyTodoService, DailyTodoService>();
+builder.Services.AddScoped<IActivityService, ActivityService>();
 
 // Register HttpClient for TTS proxy
 builder.Services.AddHttpClient();

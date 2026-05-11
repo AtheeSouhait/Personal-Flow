@@ -1,29 +1,46 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { BarChart3, Clock3, NotebookPen, PencilLine, Play, Plus, Save, SlidersHorizontal, Square, TimerReset, Trash2, X } from 'lucide-react'
+import { activitiesApi } from '@/api/activities'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
-
-type ActivityEntry = {
-  id: string
-  activity: string
-  duration: string
-  elapsedSeconds?: number
-  goalSeconds?: number
-  goalPeriod?: 'daily' | 'weekly'
-  goalType?: 'target' | 'limit'
-  notes: string[]
-}
-
-type ActivityByDate = Record<string, ActivityEntry[]>
+import type { ActivityEntry } from '@/types'
 
 type RunningTimer = {
   date: string
-  activityId: string
+  activityId: number
 }
 
-const STORAGE_KEY = 'activity-tracker-v1'
+type LocalActivityTrackerData = {
+  activities?: Array<{
+    id: string
+    activity: string
+    goalSeconds?: number
+    goalPeriod?: 'daily' | 'weekly'
+    goalType?: 'target' | 'limit'
+  }>
+  entriesByDate?: Record<string, Record<string, {
+    elapsedSeconds?: number
+    duration?: string
+    notes?: string[]
+  }>>
+}
+
+type LocalLegacyActivityEntry = {
+  id: string
+  activity: string
+  elapsedSeconds?: number
+  duration?: string
+  goalSeconds?: number
+  goalPeriod?: 'daily' | 'weekly'
+  goalType?: 'target' | 'limit'
+  notes?: string[]
+}
+
+const LEGACY_STORAGE_KEY = 'activity-tracker-v1'
+const DB_MIGRATION_KEY = 'activity-tracker-db-migrated-v1'
 
 const activityAccents = ['#6f6ab7', '#d79a4b', '#4ba9bd', '#b85a57', '#7aa66a']
 
@@ -77,91 +94,207 @@ const getWeekKey = (dateValue: string) => {
   return date.toISOString().split('T')[0]
 }
 
+const getWeekDates = (dateValue: string) => {
+  const start = new Date(`${getWeekKey(dateValue)}T00:00:00`)
+  return Array.from({ length: 7 }, (_, index) => {
+    const date = new Date(start)
+    date.setDate(start.getDate() + index)
+    return date.toISOString().split('T')[0]
+  })
+}
+
 export default function ActivityTracker() {
+  const queryClient = useQueryClient()
   const [selectedDate, setSelectedDate] = useState(() => new Date().toISOString().split('T')[0])
   const [activityName, setActivityName] = useState('')
   const [duration, setDuration] = useState('00:00')
   const [noteDraft, setNoteDraft] = useState<Record<string, string>>({})
   const [editingNote, setEditingNote] = useState<Record<string, number | null>>({})
-  const [activitiesByDate, setActivitiesByDate] = useState<ActivityByDate>({})
   const [runningTimers, setRunningTimers] = useState<RunningTimer[]>([])
-  const [isHydrated, setIsHydrated] = useState(false)
-  const [detailsActivityId, setDetailsActivityId] = useState<string | null>(null)
-  const [goalEditorActivityId, setGoalEditorActivityId] = useState<string | null>(null)
+  const [detailsActivityId, setDetailsActivityId] = useState<number | null>(null)
+  const [goalEditorActivityId, setGoalEditorActivityId] = useState<number | null>(null)
   const [goalDraft, setGoalDraft] = useState<Record<string, { duration: string, period: 'daily' | 'weekly', type: 'target' | 'limit' }>>({})
-  const [timeEditorActivityId, setTimeEditorActivityId] = useState<string | null>(null)
+  const [timeEditorActivityId, setTimeEditorActivityId] = useState<number | null>(null)
   const [timeDraft, setTimeDraft] = useState<Record<string, string>>({})
+  const lastTimerSaveRef = useRef<Record<string, number>>({})
+  const hasStartedLocalImportRef = useRef(false)
+
+  const activityQueryKey = useMemo(() => ['activities', selectedDate], [selectedDate])
+
+  const { data: activities = [], isLoading } = useQuery({
+    queryKey: activityQueryKey,
+    queryFn: () => activitiesApi.getForDate(selectedDate),
+  })
+
+  const logsByWeekQuery = useQuery({
+    queryKey: ['activities-week', getWeekKey(selectedDate)],
+    queryFn: async () => {
+      const entriesByDay = await Promise.all(getWeekDates(selectedDate).map(date => activitiesApi.getForDate(date)))
+      return entriesByDay.flat()
+    },
+  })
+
+  const createMutation = useMutation({
+    mutationFn: ({ date, activity, elapsedSeconds }: { date: string, activity: string, elapsedSeconds: number }) => (
+      activitiesApi.create(date, { activity, elapsedSeconds, notes: [] })
+    ),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['activities'] })
+      setActivityName('')
+      setDuration('00:00')
+    },
+  })
+
+  const updateGoalMutation = useMutation({
+    mutationFn: ({ id, goalSeconds, goalPeriod, goalType }: { id: number, goalSeconds?: number, goalPeriod?: 'daily' | 'weekly', goalType?: 'target' | 'limit' }) => (
+      activitiesApi.updateGoal(id, { goalSeconds, goalPeriod, goalType })
+    ),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['activities'] }),
+  })
+
+  const upsertLogMutation = useMutation({
+    mutationFn: ({ id, date, elapsedSeconds, notes }: { id: number, date: string, elapsedSeconds: number, notes: string[] }) => (
+      activitiesApi.upsertLog(id, date, { elapsedSeconds, notes })
+    ),
+    onSuccess: (_entry, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['activities', variables.date] })
+      queryClient.invalidateQueries({ queryKey: ['activities-week'] })
+    },
+  })
+
+  const deleteMutation = useMutation({
+    mutationFn: activitiesApi.delete,
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['activities'] }),
+  })
 
   useEffect(() => {
-    const raw = localStorage.getItem(STORAGE_KEY)
+    if (hasStartedLocalImportRef.current || localStorage.getItem(DB_MIGRATION_KEY)) return
+
+    const raw = localStorage.getItem(LEGACY_STORAGE_KEY)
     if (!raw) {
-      setIsHydrated(true)
+      localStorage.setItem(DB_MIGRATION_KEY, 'true')
       return
     }
 
-    try {
-      const parsed = JSON.parse(raw) as ActivityByDate
-      setActivitiesByDate(parsed)
-    } catch {
-      setActivitiesByDate({})
-    } finally {
-      setIsHydrated(true)
+    hasStartedLocalImportRef.current = true
+
+    const importLocalActivities = async () => {
+      const parsed = JSON.parse(raw) as LocalActivityTrackerData
+      const definitions = parsed.activities ?? []
+      const entriesByDate = parsed.entriesByDate ?? {}
+
+      if (definitions.length === 0 && Object.keys(entriesByDate).length === 0) {
+        const legacyByDate = JSON.parse(raw) as Record<string, LocalLegacyActivityEntry[]>
+
+        for (const [date, entries] of Object.entries(legacyByDate)) {
+          if (!Array.isArray(entries)) continue
+
+          for (const entry of entries) {
+            if (!entry.activity?.trim()) continue
+
+            const importedEntry = await activitiesApi.create(date, {
+              activity: entry.activity,
+              elapsedSeconds: entry.elapsedSeconds ?? durationToSeconds(entry.duration ?? '00:00'),
+              notes: entry.notes ?? [],
+            })
+
+            if (entry.goalSeconds) {
+              await activitiesApi.updateGoal(importedEntry.id, {
+                goalSeconds: entry.goalSeconds,
+                goalPeriod: entry.goalPeriod,
+                goalType: entry.goalType,
+              })
+            }
+          }
+        }
+
+        localStorage.setItem(DB_MIGRATION_KEY, 'true')
+        queryClient.invalidateQueries({ queryKey: ['activities'] })
+        return
+      }
+
+      for (const activity of definitions) {
+        if (!activity.activity.trim()) continue
+
+        for (const [date, entries] of Object.entries(entriesByDate)) {
+          const entry = entries[activity.id]
+          if (!entry) continue
+
+          const importedEntry = await activitiesApi.create(date, {
+            activity: activity.activity,
+            elapsedSeconds: entry.elapsedSeconds ?? durationToSeconds(entry.duration ?? '00:00'),
+            notes: entry.notes ?? [],
+          })
+
+          if (activity.goalSeconds) {
+            await activitiesApi.updateGoal(importedEntry.id, {
+              goalSeconds: activity.goalSeconds,
+              goalPeriod: activity.goalPeriod,
+              goalType: activity.goalType,
+            })
+          }
+        }
+      }
+
+      localStorage.setItem(DB_MIGRATION_KEY, 'true')
+      queryClient.invalidateQueries({ queryKey: ['activities'] })
     }
-  }, [])
 
-  useEffect(() => {
-    if (!isHydrated) return
+    importLocalActivities().catch((error) => {
+      hasStartedLocalImportRef.current = false
+      console.error('Activity import failed:', error)
+    })
+  }, [queryClient])
 
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(activitiesByDate))
-  }, [activitiesByDate, isHydrated])
+  const saveLog = (entry: ActivityEntry, date = selectedDate) => {
+    upsertLogMutation.mutate({
+      id: entry.id,
+      date,
+      elapsedSeconds: entry.elapsedSeconds,
+      notes: entry.notes,
+    })
+  }
 
   useEffect(() => {
     if (runningTimers.length === 0) return
 
     const interval = window.setInterval(() => {
-      const timerIdsByDate = runningTimers.reduce<Record<string, Set<string>>>((byDate, timer) => {
-        byDate[timer.date] = byDate[timer.date] ?? new Set<string>()
-        byDate[timer.date].add(timer.activityId)
-        return byDate
-      }, {})
+      runningTimers.forEach((timer) => {
+        const key = ['activities', timer.date]
 
-      setActivitiesByDate(prev => {
-        const next = { ...prev }
+        queryClient.setQueryData<ActivityEntry[]>(key, (previous = []) => (
+          previous.map((entry) => {
+            if (entry.id !== timer.activityId) return entry
 
-        Object.entries(timerIdsByDate).forEach(([date, activityIds]) => {
-          next[date] = (prev[date] ?? []).map((entry) => {
-            if (!activityIds.has(entry.id)) return entry
-
-            const nextSeconds = (entry.elapsedSeconds ?? durationToSeconds(entry.duration)) + 1
-            return {
+            const nextSeconds = entry.elapsedSeconds + 1
+            const nextEntry = {
               ...entry,
               duration: secondsToDuration(nextSeconds),
               elapsedSeconds: nextSeconds,
             }
-          })
-        })
+            const timerKey = getTimerKey(timer)
+            const now = Date.now()
 
-        return next
+            if (!lastTimerSaveRef.current[timerKey] || now - lastTimerSaveRef.current[timerKey] >= 5000) {
+              lastTimerSaveRef.current[timerKey] = now
+              saveLog(nextEntry, timer.date)
+            }
+
+            return nextEntry
+          })
+        ))
       })
     }, 1000)
 
     return () => window.clearInterval(interval)
-  }, [runningTimers])
-
-  const activities = useMemo(() => activitiesByDate[selectedDate] ?? [], [activitiesByDate, selectedDate])
+  }, [queryClient, runningTimers])
 
   const getActivityTotalForGoal = (entry: ActivityEntry) => {
-    if (entry.goalPeriod !== 'weekly') return entry.elapsedSeconds ?? durationToSeconds(entry.duration)
+    if (entry.goalPeriod !== 'weekly') return entry.elapsedSeconds
 
-    const selectedWeek = getWeekKey(selectedDate)
-    return Object.entries(activitiesByDate).reduce((total, [date, entries]) => {
-      if (getWeekKey(date) !== selectedWeek) return total
-
-      return total + entries.reduce((entryTotal, candidate) => {
-        if (candidate.activity.trim().toLowerCase() !== entry.activity.trim().toLowerCase()) return entryTotal
-        return entryTotal + (candidate.elapsedSeconds ?? durationToSeconds(candidate.duration))
-      }, 0)
-    }, 0)
+    return logsByWeekQuery.data
+      ?.filter(candidate => candidate.id === entry.id)
+      .reduce((total, candidate) => total + candidate.elapsedSeconds, 0) ?? entry.elapsedSeconds
   }
 
   const getGoalSummary = (entry: ActivityEntry) => {
@@ -183,44 +316,36 @@ export default function ActivityTracker() {
   const addActivity = () => {
     if (!activityName.trim() || !isValidDuration(duration)) return
 
-    const next: ActivityEntry = {
-      id: crypto.randomUUID(),
+    createMutation.mutate({
+      date: selectedDate,
       activity: activityName.trim(),
-      duration,
       elapsedSeconds: durationToSeconds(duration),
-      notes: [],
-    }
-
-    setActivitiesByDate(prev => ({
-      ...prev,
-      [selectedDate]: [next, ...(prev[selectedDate] ?? [])],
-    }))
-
-    setActivityName('')
-    setDuration('00:00')
+    })
   }
 
-  const updateActivity = (activityId: string, updater: (entry: ActivityEntry) => ActivityEntry) => {
-    setActivitiesByDate(prev => ({
-      ...prev,
-      [selectedDate]: (prev[selectedDate] ?? []).map(entry => entry.id === activityId ? updater(entry) : entry),
-    }))
+  const replaceActivityInCache = (activityId: number, updater: (entry: ActivityEntry) => ActivityEntry) => {
+    queryClient.setQueryData<ActivityEntry[]>(activityQueryKey, (previous = []) => (
+      previous.map(entry => entry.id === activityId ? updater(entry) : entry)
+    ))
   }
 
-  const deleteActivity = (activityId: string) => {
-    setRunningTimers(prev => prev.filter(timer => timer.activityId !== activityId || timer.date !== selectedDate))
-    setActivitiesByDate(prev => ({
-      ...prev,
-      [selectedDate]: (prev[selectedDate] ?? []).filter(entry => entry.id !== activityId),
-    }))
+  const deleteActivity = (activityId: number) => {
+    setRunningTimers(prev => prev.filter(timer => timer.activityId !== activityId))
+    deleteMutation.mutate(activityId)
   }
 
-  const toggleTimer = (activityId: string) => {
+  const toggleTimer = (activityId: number) => {
     const timer = { date: selectedDate, activityId }
     const timerKey = getTimerKey(timer)
+    const existingTimer = runningTimers.some(candidate => getTimerKey(candidate) === timerKey)
+
+    if (existingTimer) {
+      const entry = activities.find(candidate => candidate.id === activityId)
+      if (entry) saveLog(entry)
+    }
 
     setRunningTimers(prev => (
-      prev.some(candidate => getTimerKey(candidate) === timerKey)
+      existingTimer
         ? prev.filter(candidate => getTimerKey(candidate) !== timerKey)
         : [...prev, timer]
     ))
@@ -238,26 +363,33 @@ export default function ActivityTracker() {
     }))
   }
 
-  const saveGoal = (activityId: string) => {
+  const saveGoal = (activityId: number) => {
     const draft = goalDraft[activityId]
     if (!draft || !isValidDuration(draft.duration)) return
 
-    updateActivity(activityId, (entry) => ({
+    replaceActivityInCache(activityId, entry => ({
       ...entry,
       goalSeconds: durationToSeconds(draft.duration),
       goalPeriod: draft.period,
       goalType: draft.type,
     }))
+    updateGoalMutation.mutate({
+      id: activityId,
+      goalSeconds: durationToSeconds(draft.duration),
+      goalPeriod: draft.period,
+      goalType: draft.type,
+    })
     setGoalEditorActivityId(null)
   }
 
-  const clearGoal = (activityId: string) => {
-    updateActivity(activityId, (entry) => ({
+  const clearGoal = (activityId: number) => {
+    replaceActivityInCache(activityId, entry => ({
       ...entry,
       goalSeconds: undefined,
       goalPeriod: undefined,
       goalType: undefined,
     }))
+    updateGoalMutation.mutate({ id: activityId })
     setGoalEditorActivityId(null)
   }
 
@@ -269,49 +401,55 @@ export default function ActivityTracker() {
     }))
   }
 
-  const saveLoggedTime = (activityId: string) => {
+  const saveLoggedTime = (activityId: number) => {
     const draft = timeDraft[activityId]
     if (!draft || !isValidDuration(draft)) return
 
     const nextSeconds = durationToSeconds(draft)
-    updateActivity(activityId, (entry) => ({
-      ...entry,
-      duration: secondsToDuration(nextSeconds),
-      elapsedSeconds: nextSeconds,
-    }))
+    const currentEntry = activities.find(entry => entry.id === activityId)
+    if (!currentEntry) return
+
+    const nextEntry = { ...currentEntry, duration: secondsToDuration(nextSeconds), elapsedSeconds: nextSeconds }
+    replaceActivityInCache(activityId, () => nextEntry)
+    saveLog(nextEntry)
     setTimeEditorActivityId(null)
   }
 
-  const upsertNote = (activityId: string) => {
+  const upsertNote = (activityId: number) => {
     const draft = (noteDraft[activityId] ?? '').trim()
     if (!draft) return
 
     const editingIndex = editingNote[activityId]
+    const currentEntry = activities.find(entry => entry.id === activityId)
+    if (!currentEntry) return
 
-    updateActivity(activityId, (entry) => {
-      if (editingIndex === undefined || editingIndex === null) {
-        return { ...entry, notes: [...entry.notes, draft] }
-      }
+    const nextNotes = [...currentEntry.notes]
+    if (editingIndex === undefined || editingIndex === null) nextNotes.push(draft)
+    else nextNotes[editingIndex] = draft
 
-      const nextNotes = [...entry.notes]
-      nextNotes[editingIndex] = draft
-      return { ...entry, notes: nextNotes }
-    })
+    const nextEntry = { ...currentEntry, notes: nextNotes }
+    replaceActivityInCache(activityId, () => nextEntry)
+    saveLog(nextEntry)
 
     setNoteDraft(prev => ({ ...prev, [activityId]: '' }))
     setEditingNote(prev => ({ ...prev, [activityId]: null }))
   }
 
-  const startEditNote = (activityId: string, index: number, value: string) => {
+  const startEditNote = (activityId: number, index: number, value: string) => {
     setEditingNote(prev => ({ ...prev, [activityId]: index }))
     setNoteDraft(prev => ({ ...prev, [activityId]: value }))
   }
 
-  const deleteNote = (activityId: string, index: number) => {
-    updateActivity(activityId, (entry) => ({
-      ...entry,
-      notes: entry.notes.filter((_, i) => i !== index),
-    }))
+  const deleteNote = (activityId: number, index: number) => {
+    const currentEntry = activities.find(entry => entry.id === activityId)
+    if (!currentEntry) return
+
+    const nextEntry = {
+      ...currentEntry,
+      notes: currentEntry.notes.filter((_, i) => i !== index),
+    }
+    replaceActivityInCache(activityId, () => nextEntry)
+    saveLog(nextEntry)
   }
 
   return (
@@ -362,6 +500,12 @@ export default function ActivityTracker() {
         </div>
 
         <div className="space-y-3 pr-1">
+          {isLoading && (
+            <p className="rounded-md border border-dashed border-amber-900/30 bg-amber-50/60 p-4 text-sm text-muted-foreground dark:bg-black/20">
+              Chargement des activités...
+            </p>
+          )}
+
           {activities.length === 0 && (
             <p className="rounded-md border border-dashed border-amber-900/30 bg-amber-50/60 p-4 text-sm text-muted-foreground dark:bg-black/20">
               Aucune activité pour cette date.

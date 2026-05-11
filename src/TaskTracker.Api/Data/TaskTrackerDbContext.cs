@@ -14,6 +14,8 @@ public class TaskTrackerDbContext : DbContext
     public DbSet<ProjectTask> Tasks { get; set; } = null!;
     public DbSet<Idea> Ideas { get; set; } = null!;
     public DbSet<DailyTodo> DailyTodos { get; set; } = null!;
+    public DbSet<Activity> Activities { get; set; } = null!;
+    public DbSet<ActivityLog> ActivityLogs { get; set; } = null!;
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -86,6 +88,38 @@ public class TaskTrackerDbContext : DbContext
 
             entity.HasIndex(e => e.DisplayOrder);
             entity.HasIndex(e => e.IsCompleted);
+        });
+
+        // Activity configuration
+        modelBuilder.Entity<Activity>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Name).IsRequired().HasMaxLength(200);
+            entity.Property(e => e.GoalPeriod).HasConversion<string>();
+            entity.Property(e => e.GoalType).HasConversion<string>();
+            entity.Property(e => e.CreatedAt).IsRequired();
+            entity.Property(e => e.UpdatedAt).IsRequired();
+
+            entity.HasIndex(e => e.Name).IsUnique();
+
+            entity.HasMany(e => e.Logs)
+                .WithOne(e => e.Activity)
+                .HasForeignKey(e => e.ActivityId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        // ActivityLog configuration
+        modelBuilder.Entity<ActivityLog>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Date).IsRequired();
+            entity.Property(e => e.ElapsedSeconds).IsRequired();
+            entity.Property(e => e.NotesJson).IsRequired();
+            entity.Property(e => e.CreatedAt).IsRequired();
+            entity.Property(e => e.UpdatedAt).IsRequired();
+
+            entity.HasIndex(e => e.Date);
+            entity.HasIndex(e => new { e.ActivityId, e.Date }).IsUnique();
         });
     }
 }

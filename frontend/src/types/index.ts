@@ -103,3 +103,42 @@ export interface ReorderProjectsDto {
 export interface ReorderTasksDto {
   taskIds: number[];
 }
+
+export interface ActivityEntry {
+  id: number;
+  activity: string;
+  duration: string;
+  elapsedSeconds: number;
+  goalSeconds?: number;
+  goalPeriod?: 'daily' | 'weekly';
+  goalType?: 'target' | 'limit';
+  notes: string[];
+}
+
+export interface ActivityLog {
+  id: number;
+  activityId: number;
+  date: string;
+  elapsedSeconds: number;
+  duration: string;
+  notes: string[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateActivityDto {
+  activity: string;
+  elapsedSeconds?: number;
+  notes?: string[];
+}
+
+export interface UpdateActivityGoalDto {
+  goalSeconds?: number;
+  goalPeriod?: 'daily' | 'weekly';
+  goalType?: 'target' | 'limit';
+}
+
+export interface UpsertActivityLogDto {
+  elapsedSeconds: number;
+  notes?: string[];
+}
