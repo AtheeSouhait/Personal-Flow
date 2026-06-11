@@ -51,6 +51,17 @@ using (var scope = app.Services.CreateScope())
         {
             db.Database.ExecuteSqlRaw(
                 "UPDATE __EFMigrationsHistory SET MigrationId = '20250101000000_InitialCreate' WHERE MigrationId = 'InitialCreate'");
+
+            // Some legacy databases have the InitialCreate tables but no matching
+            // history row at all (the row was lost when the migration id was
+            // renamed). Without this, Migrate() re-runs InitialCreate and fails
+            // with "table Projects already exists". Backfill the row only when the
+            // schema is clearly already present.
+            db.Database.ExecuteSqlRaw(
+                "INSERT INTO __EFMigrationsHistory (MigrationId, ProductVersion) " +
+                "SELECT '20250101000000_InitialCreate', '9.0.0' " +
+                "WHERE EXISTS (SELECT 1 FROM sqlite_master WHERE type='table' AND name='Projects') " +
+                "AND NOT EXISTS (SELECT 1 FROM __EFMigrationsHistory WHERE MigrationId='20250101000000_InitialCreate')");
         }
         catch (Microsoft.Data.Sqlite.SqliteException)
         {
