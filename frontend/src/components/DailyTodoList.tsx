@@ -6,15 +6,19 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Checkbox } from '@/components/ui/checkbox'
-import { Plus, Trash2, GripVertical, Pencil, X, Check, Pin, PinOff } from 'lucide-react'
+import { Plus, Trash2, GripVertical, Pencil, X, Check, Pin, PinOff, Repeat } from 'lucide-react'
 import type { DailyTodo } from '@/types'
 import { usePinnedTodos } from '@/context/PinnedTodosContext'
+import { useCelebration } from '@/context/CelebrationContext'
+import { MorningTriageDialog } from './MorningTriageDialog'
 
 export default function DailyTodoList() {
   const queryClient = useQueryClient()
   const { isPinned, toggle: togglePin } = usePinnedTodos()
+  const { celebrate } = useCelebration()
   const [newTodoTitle, setNewTodoTitle] = useState('')
   const [newTodoDescription, setNewTodoDescription] = useState('')
+  const [newTodoRecurring, setNewTodoRecurring] = useState(false)
   const [editingId, setEditingId] = useState<number | null>(null)
   const [editTitle, setEditTitle] = useState('')
   const [editDescription, setEditDescription] = useState('')
@@ -31,6 +35,7 @@ export default function DailyTodoList() {
       queryClient.invalidateQueries({ queryKey: ['dailyTodos'] })
       setNewTodoTitle('')
       setNewTodoDescription('')
+      setNewTodoRecurring(false)
     },
   })
 
@@ -61,13 +66,22 @@ export default function DailyTodoList() {
     createMutation.mutate({
       title: newTodoTitle,
       description: newTodoDescription || undefined,
+      isRecurring: newTodoRecurring || undefined,
     })
   }
 
   const handleToggleComplete = (todo: DailyTodo) => {
+    if (!todo.isCompleted) celebrate()
     updateMutation.mutate({
       id: todo.id,
       data: { isCompleted: !todo.isCompleted },
+    })
+  }
+
+  const handleToggleRecurring = (todo: DailyTodo) => {
+    updateMutation.mutate({
+      id: todo.id,
+      data: { isRecurring: !todo.isRecurring },
     })
   }
 
@@ -139,6 +153,8 @@ export default function DailyTodoList() {
   }
 
   return (
+    <>
+    <MorningTriageDialog todos={todos} />
     <Card className="bg-gradient-to-br from-slate-900 via-blue-950 to-slate-900 border-2 border-blue-600 shadow-[0_0_20px_rgba(37,99,235,0.3),0_0_40px_rgba(37,99,235,0.1)]">
       <CardHeader className="border-b border-blue-500/30 bg-gradient-to-b from-blue-900/30 to-transparent">
         <CardTitle className="text-blue-100 font-bold tracking-wide" style={{ textShadow: '0 0 10px rgba(96,165,250,0.55), 0 0 22px rgba(96,165,250,0.3)' }}>
@@ -162,6 +178,15 @@ export default function DailyTodoList() {
             rows={2}
             className="resize-none bg-slate-950/70 border-blue-400/45 text-slate-50 placeholder:text-blue-200/75 focus:border-blue-300 focus:shadow-[0_0_0_1px_rgba(147,197,253,0.35),0_0_18px_rgba(59,130,246,0.35)] focus:ring-0"
           />
+          <label className="flex items-center gap-2 cursor-pointer text-sm text-blue-200/85">
+            <Checkbox
+              checked={newTodoRecurring}
+              onCheckedChange={(checked) => setNewTodoRecurring(checked === true)}
+              className="border-blue-500/50 bg-slate-900/60 data-[state=checked]:bg-gradient-to-br data-[state=checked]:from-blue-600 data-[state=checked]:to-blue-700 data-[state=checked]:border-blue-500"
+            />
+            <Repeat className="h-3.5 w-3.5" />
+            Repeats every day
+          </label>
           <Button
             onClick={handleCreate}
             className="w-full bg-gradient-to-r from-blue-700 to-blue-800 hover:from-blue-600 hover:to-blue-700 border border-blue-500 text-blue-50 font-semibold shadow-[0_0_10px_rgba(59,130,246,0.3)] hover:shadow-[0_0_15px_rgba(59,130,246,0.5)] transition-all"
@@ -234,11 +259,14 @@ export default function DailyTodoList() {
                   ) : (
                     <>
                       <div
-                        className={`font-medium ${
+                        className={`font-medium flex items-center gap-1.5 ${
                           todo.isCompleted ? 'line-through text-blue-200/60' : 'text-slate-50'
                         }`}
                       >
                         {todo.title}
+                        {todo.isRecurring && (
+                          <Repeat className="h-3.5 w-3.5 text-blue-300/70 flex-shrink-0" />
+                        )}
                       </div>
                       {todo.description && (
                         <div
@@ -255,6 +283,19 @@ export default function DailyTodoList() {
 
                 {editingId !== todo.id && (
                   <div className="flex gap-1 flex-shrink-0">
+                    <Button
+                      onClick={() => handleToggleRecurring(todo)}
+                      size="sm"
+                      variant="ghost"
+                      title={todo.isRecurring ? 'Stop repeating daily' : 'Repeat every day'}
+                      className={`h-8 w-8 p-0 hover:bg-blue-500/20 ${
+                        todo.isRecurring
+                          ? 'text-blue-300 hover:text-blue-200'
+                          : 'text-blue-400/50 hover:text-blue-300'
+                      }`}
+                    >
+                      <Repeat className="h-4 w-4" />
+                    </Button>
                     <Button
                       onClick={() => togglePin(todo.id)}
                       size="sm"
@@ -292,5 +333,6 @@ export default function DailyTodoList() {
         </div>
       </CardContent>
     </Card>
+    </>
   )
 }

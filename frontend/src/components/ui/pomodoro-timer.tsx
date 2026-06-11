@@ -6,7 +6,7 @@ import { Input } from './input'
 
 interface PomodoroTimerProps {
   defaultMinutes?: number
-  onComplete?: () => void
+  onComplete?: (elapsedSeconds: number) => void
   className?: string
 }
 
@@ -38,7 +38,7 @@ export function PomodoroTimer({
             setIsRunning(false)
             setIsCompleted(true)
             playCompletionSound()
-            onComplete?.()
+            onComplete?.(duration * 60)
             return 0
           }
           return prev - 1

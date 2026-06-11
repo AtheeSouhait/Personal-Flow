@@ -1,5 +1,10 @@
 import { Task } from '@/types'
 import { useState } from 'react'
+import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { tasksApi } from '@/api/tasks'
+import { SubtaskList } from './SubtaskList'
+import { useCelebration } from '@/context/CelebrationContext'
+import { getDueUrgency, urgencyChipClasses, urgencyLabels, formatMinutes } from '@/lib/urgency'
 import {
   Dialog,
   DialogContent,
@@ -12,7 +17,8 @@ import { Button } from './ui/button'
 import { Textarea } from './ui/textarea'
 import { EditableText } from './ui/editable-text'
 import { PomodoroTimer } from './ui/pomodoro-timer'
-import { Calendar, Flag, Trash2 } from 'lucide-react'
+import { Calendar, Flag, Timer, Trash2, X } from 'lucide-react'
+import { Input } from './ui/input'
 import { format } from 'date-fns'
 import ReactMarkdown from 'react-markdown'
 
@@ -43,8 +49,20 @@ export function TaskDetailDialog({
   const [editingDescription, setEditingDescription] = useState(false)
   const [descriptionDraft, setDescriptionDraft] = useState('')
   const [completedPomodoro, setCompletedPomodoro] = useState(false)
+  const queryClient = useQueryClient()
+  const { celebrate } = useCelebration()
+
+  const logTimeMutation = useMutation({
+    mutationFn: ({ id, seconds }: { id: number; seconds: number }) => tasksApi.logTime(id, seconds),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['tasks'] })
+      queryClient.invalidateQueries({ queryKey: ['projects'] })
+    },
+  })
 
   if (!task) return null
+
+  const urgency = task.status === 'Completed' ? 'none' : getDueUrgency(task.dueDate)
 
   const handleProgressChange = (value: number[]) => {
     const newProgress = value[0]
@@ -55,9 +73,17 @@ export function TaskDetailDialog({
     }
     if (newProgress === 100) {
       updateData.status = 'Completed'
+      if (task.status !== 'Completed') celebrate('Task completed!')
     }
 
     onUpdateTask(task.id, updateData)
+  }
+
+  const handleStatusChange = (value: string) => {
+    if (value === 'Completed' && task.status !== 'Completed') {
+      celebrate('Task completed!')
+    }
+    onUpdateTask(task.id, { status: value })
   }
 
   const handleStartDescriptionEdit = () => {
@@ -78,8 +104,9 @@ export function TaskDetailDialog({
     setDescriptionDraft('')
   }
 
-  const handlePomodoroComplete = () => {
+  const handlePomodoroComplete = (elapsedSeconds: number) => {
     setCompletedPomodoro(true)
+    logTimeMutation.mutate({ id: task.id, seconds: elapsedSeconds })
     if ('Notification' in window && Notification.permission === 'granted') {
       new Notification('Pomodoro Complete!', {
         body: `Time's up for: ${task.title}`,
@@ -170,12 +197,14 @@ export function TaskDetailDialog({
             />
           </div>
 
+          {/* Subtasks */}
+          <div className="pt-2 border-t">
+            <SubtaskList task={task} />
+          </div>
+
           {/* Status & Due Date */}
-          <div className="flex items-center justify-between gap-4 flex-wrap">
-            <Select
-              value={task.status}
-              onValueChange={(value) => onUpdateTask(task.id, { status: value })}
-            >
+          <div className="flex items-center justify-between gap-4 flex-wrap pt-2 border-t">
+            <Select value={task.status} onValueChange={handleStatusChange}>
               <SelectTrigger className="w-[180px]">
                 <SelectValue />
               </SelectTrigger>
@@ -187,10 +216,83 @@ export function TaskDetailDialog({
               </SelectContent>
             </Select>
 
-            {task.dueDate && (
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <Calendar className="h-4 w-4" />
-                {format(new Date(task.dueDate), 'MMM d, yyyy')}
+            <div className="flex items-center gap-1">
+              <Calendar
+                className={`h-4 w-4 ${
+                  urgency === 'overdue'
+                    ? 'text-red-500'
+                    : urgency === 'today'
+                      ? 'text-amber-500'
+                      : 'text-muted-foreground'
+                }`}
+              />
+              <Input
+                type="date"
+                value={task.dueDate ? format(new Date(task.dueDate), 'yyyy-MM-dd') : ''}
+                onChange={(e) => {
+                  if (e.target.value) {
+                    onUpdateTask(task.id, { dueDate: e.target.value })
+                  } else {
+                    onUpdateTask(task.id, { clearDueDate: true })
+                  }
+                }}
+                className="h-8 w-[150px] text-sm"
+              />
+              {task.dueDate && (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-7 w-7"
+                  title="Clear due date"
+                  onClick={() => onUpdateTask(task.id, { clearDueDate: true })}
+                >
+                  <X className="h-3.5 w-3.5" />
+                </Button>
+              )}
+            </div>
+          </div>
+
+          {urgency !== 'none' && urgencyLabels[urgency] && (
+            <div className={`inline-flex items-center gap-1 text-xs px-2 py-1 rounded ${urgencyChipClasses[urgency]}`}>
+              {urgencyLabels[urgency]}
+            </div>
+          )}
+
+          {/* Time estimate & actual */}
+          <div className="flex items-center justify-between gap-4 flex-wrap">
+            <div className="flex items-center gap-2">
+              <Timer className="h-4 w-4 text-muted-foreground" />
+              <span className="text-sm text-muted-foreground">Estimate</span>
+              <Input
+                type="number"
+                min="0"
+                placeholder="min"
+                value={task.estimatedMinutes ?? ''}
+                onChange={(e) => {
+                  const v = parseInt(e.target.value)
+                  if (Number.isNaN(v) || v <= 0) {
+                    onUpdateTask(task.id, { clearEstimate: true })
+                  } else {
+                    onUpdateTask(task.id, { estimatedMinutes: v })
+                  }
+                }}
+                className="h-8 w-20 text-sm"
+              />
+              <span className="text-xs text-muted-foreground">min</span>
+            </div>
+            {task.actualSeconds > 0 && (
+              <div className="text-sm text-muted-foreground">
+                Focused:{' '}
+                <span
+                  className={`font-medium ${
+                    task.estimatedMinutes && task.actualSeconds / 60 > task.estimatedMinutes
+                      ? 'text-amber-600 dark:text-amber-400'
+                      : 'text-foreground'
+                  }`}
+                >
+                  {formatMinutes(Math.round(task.actualSeconds / 60))}
+                </span>
+                {task.estimatedMinutes ? ` / ${formatMinutes(task.estimatedMinutes)} estimated` : ''}
               </div>
             )}
           </div>

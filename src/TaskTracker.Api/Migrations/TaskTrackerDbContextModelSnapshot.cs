@@ -92,6 +92,9 @@ namespace TaskTracker.Api.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("INTEGER");
 
+                    b.Property<DateTime?>("CompletedAt")
+                        .HasColumnType("TEXT");
+
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("TEXT");
 
@@ -103,6 +106,9 @@ namespace TaskTracker.Api.Migrations
                         .HasColumnType("INTEGER");
 
                     b.Property<bool>("IsCompleted")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<bool>("IsRecurring")
                         .HasColumnType("INTEGER");
 
                     b.Property<string>("Title")
@@ -194,6 +200,9 @@ namespace TaskTracker.Api.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("INTEGER");
 
+                    b.Property<int>("ActualSeconds")
+                        .HasColumnType("INTEGER");
+
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("TEXT");
 
@@ -206,6 +215,9 @@ namespace TaskTracker.Api.Migrations
 
                     b.Property<DateTime?>("DueDate")
                         .HasColumnType("TEXT");
+
+                    b.Property<int?>("EstimatedMinutes")
+                        .HasColumnType("INTEGER");
 
                     b.Property<string>("Priority")
                         .IsRequired()
@@ -242,6 +254,39 @@ namespace TaskTracker.Api.Migrations
                     b.ToTable("Tasks");
                 });
 
+            modelBuilder.Entity("TaskTracker.Api.Models.Subtask", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int>("DisplayOrder")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<bool>("IsCompleted")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("TaskId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("TEXT");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("TEXT");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TaskId");
+
+                    b.ToTable("Subtasks");
+                });
+
             modelBuilder.Entity("TaskTracker.Api.Models.ActivityLog", b =>
                 {
                     b.HasOne("TaskTracker.Api.Models.Activity", "Activity")
@@ -275,6 +320,17 @@ namespace TaskTracker.Api.Migrations
                     b.Navigation("Project");
                 });
 
+            modelBuilder.Entity("TaskTracker.Api.Models.Subtask", b =>
+                {
+                    b.HasOne("TaskTracker.Api.Models.ProjectTask", "Task")
+                        .WithMany("Subtasks")
+                        .HasForeignKey("TaskId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Task");
+                });
+
             modelBuilder.Entity("TaskTracker.Api.Models.Activity", b =>
                 {
                     b.Navigation("Logs");
@@ -285,6 +341,11 @@ namespace TaskTracker.Api.Migrations
                     b.Navigation("Ideas");
 
                     b.Navigation("Tasks");
+                });
+
+            modelBuilder.Entity("TaskTracker.Api.Models.ProjectTask", b =>
+                {
+                    b.Navigation("Subtasks");
                 });
 #pragma warning restore 612, 618
         }

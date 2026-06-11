@@ -1,9 +1,17 @@
+using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Migrations;
+using TaskTracker.Api.Data;
 
 #nullable disable
 
 namespace TaskTracker.Api.Migrations
 {
+    // The explicit attributes give this migration its timestamped ID so it
+    // sorts before the later migrations on a fresh database. Without them EF
+    // falls back to the class name "InitialCreate", which sorts last and
+    // breaks bootstrapping a new install.
+    [DbContext(typeof(TaskTrackerDbContext))]
+    [Migration("20250101000000_InitialCreate")]
     public partial class InitialCreate : Migration
     {
         protected override void Up(MigrationBuilder migrationBuilder)

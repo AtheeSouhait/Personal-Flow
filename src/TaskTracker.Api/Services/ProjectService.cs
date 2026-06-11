@@ -29,6 +29,7 @@ public class ProjectService : IProjectService
     {
         var project = await _context.Projects
             .Include(p => p.Tasks)
+                .ThenInclude(t => t.Subtasks)
             .Include(p => p.Ideas)
             .FirstOrDefaultAsync(p => p.Id == id);
 
@@ -173,8 +174,14 @@ public class ProjectService : IProjectService
                 ProgressPercentage = t.ProgressPercentage,
                 DisplayOrder = t.DisplayOrder,
                 DueDate = t.DueDate,
+                EstimatedMinutes = t.EstimatedMinutes,
+                ActualSeconds = t.ActualSeconds,
                 CreatedAt = t.CreatedAt,
-                UpdatedAt = t.UpdatedAt
+                UpdatedAt = t.UpdatedAt,
+                Subtasks = t.Subtasks
+                    .OrderBy(s => s.DisplayOrder).ThenBy(s => s.CreatedAt)
+                    .Select(s => new SubtaskDto(s.Id, s.Title, s.TaskId, s.IsCompleted, s.DisplayOrder, s.CreatedAt, s.UpdatedAt))
+                    .ToList()
             }).ToList(),
             Ideas = project.Ideas.Select(i => new IdeaDto
             {

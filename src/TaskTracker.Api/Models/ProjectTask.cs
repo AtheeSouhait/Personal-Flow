@@ -10,12 +10,15 @@ public class ProjectTask
     public TaskPriority Priority { get; set; } = TaskPriority.Medium;
     public int ProgressPercentage { get; set; } = 0; // 0-100
     public DateTime? DueDate { get; set; }
+    public int? EstimatedMinutes { get; set; }
+    public int ActualSeconds { get; set; } = 0; // Accumulated focus time (e.g. Pomodoro sessions)
     public int DisplayOrder { get; set; } = 0;
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
 
-    // Navigation property
+    // Navigation properties
     public Project? Project { get; set; }
+    public List<Subtask> Subtasks { get; set; } = new();
 }
 
 public enum TaskStatus

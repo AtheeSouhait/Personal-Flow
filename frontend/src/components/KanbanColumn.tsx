@@ -1,7 +1,10 @@
 import { Task } from '@/types'
-import { Plus } from 'lucide-react'
+import { Plus, AlertTriangle } from 'lucide-react'
 import { Button } from './ui/button'
 import { KanbanCard, DragPosition } from './KanbanCard'
+
+// Soft work-in-progress cap: starting everything at once means finishing nothing
+const WIP_LIMIT = 3
 
 const statusConfig = {
   NotStarted: { label: 'Not Started', color: 'bg-gray-500', ring: 'ring-gray-500/30' },
@@ -44,6 +47,7 @@ export function KanbanColumn({
   onAddTask,
 }: KanbanColumnProps) {
   const config = statusConfig[status]
+  const overWipLimit = status === 'InProgress' && tasks.length > WIP_LIMIT
 
   return (
     <div
@@ -62,8 +66,13 @@ export function KanbanColumn({
           <h3 className="font-semibold text-sm uppercase tracking-wide text-muted-foreground">
             {config.label}
           </h3>
-          <span className="text-xs text-muted-foreground/60 font-medium">
+          <span
+            className={`text-xs font-medium ${
+              overWipLimit ? 'text-amber-600 dark:text-amber-400' : 'text-muted-foreground/60'
+            }`}
+          >
             {tasks.length}
+            {status === 'InProgress' && ` / ${WIP_LIMIT}`}
           </span>
         </div>
         <Button
@@ -76,6 +85,15 @@ export function KanbanColumn({
           <Plus className="h-4 w-4" />
         </Button>
       </div>
+
+      {overWipLimit && (
+        <div className="mx-1 mb-2 flex items-start gap-2 rounded-md border border-amber-500/40 bg-amber-500/10 px-2.5 py-2 text-xs text-amber-700 dark:text-amber-400">
+          <AlertTriangle className="h-3.5 w-3.5 flex-shrink-0 mt-0.5" />
+          <span>
+            {tasks.length} tasks in progress — consider finishing one before starting another.
+          </span>
+        </div>
+      )}
 
       <div
         className="flex-1 overflow-y-auto space-y-2 px-1 pb-2"

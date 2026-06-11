@@ -6,6 +6,7 @@ import { KanbanColumn } from './KanbanColumn'
 import { TaskDetailDialog } from './TaskDetailDialog'
 import { CreateTaskDialog } from './CreateTaskDialog'
 import { DragPosition } from './KanbanCard'
+import { useCelebration } from '@/context/CelebrationContext'
 
 const COLUMN_ORDER: Task['status'][] = ['NotStarted', 'InProgress', 'Completed', 'Blocked']
 
@@ -22,6 +23,7 @@ export function KanbanBoard({ tasks, projectId }: KanbanBoardProps) {
   const [selectedTask, setSelectedTask] = useState<Task | null>(null)
   const [createDialogStatus, setCreateDialogStatus] = useState<string | null>(null)
   const ghostRef = useRef<HTMLDivElement | null>(null)
+  const { celebrate } = useCelebration()
 
   // Clean up drag ghost on unmount
   useEffect(() => {
@@ -143,6 +145,7 @@ export function KanbanBoard({ tasks, projectId }: KanbanBoardProps) {
     // If moving across columns, update status first
     if (draggedTask.status !== targetTask.status) {
       updateMutation.mutate({ id: draggedTask.id, data: { status: targetTask.status } })
+      if (targetTask.status === 'Completed') celebrate('Task completed!')
     }
 
     reorderMutation.mutate({ taskIds })
@@ -181,6 +184,7 @@ export function KanbanBoard({ tasks, projectId }: KanbanBoardProps) {
 
       if (draggedTask.status !== status) {
         updateMutation.mutate({ id: draggedTask.id, data: { status } })
+        if (status === 'Completed') celebrate('Task completed!')
       }
 
       reorderMutation.mutate({ taskIds })

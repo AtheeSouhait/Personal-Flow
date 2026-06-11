@@ -28,6 +28,7 @@ export function CreateTaskDialog({ open, onOpenChange, projectId, defaultStatus 
   const [status, setStatus] = useState(defaultStatus ?? 'NotStarted')
   const [priority, setPriority] = useState('Medium')
   const [dueDate, setDueDate] = useState('')
+  const [estimatedMinutes, setEstimatedMinutes] = useState('')
   const queryClient = useQueryClient()
 
   useEffect(() => {
@@ -43,6 +44,7 @@ export function CreateTaskDialog({ open, onOpenChange, projectId, defaultStatus 
       setStatus(defaultStatus ?? 'NotStarted')
       setPriority('Medium')
       setDueDate('')
+      setEstimatedMinutes('')
       onOpenChange(false)
     },
   })
@@ -57,6 +59,7 @@ export function CreateTaskDialog({ open, onOpenChange, projectId, defaultStatus 
         status,
         priority,
         dueDate: dueDate || undefined,
+        estimatedMinutes: estimatedMinutes ? parseInt(estimatedMinutes) : undefined,
       })
     }
   }
@@ -116,6 +119,17 @@ export function CreateTaskDialog({ open, onOpenChange, projectId, defaultStatus 
                   onChange={(e) => setDueDate(e.target.value)}
                 />
               </div>
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="task-estimate">Time estimate (minutes)</Label>
+              <Input
+                id="task-estimate"
+                type="number"
+                min="0"
+                placeholder="e.g. 30"
+                value={estimatedMinutes}
+                onChange={(e) => setEstimatedMinutes(e.target.value)}
+              />
             </div>
           </div>
           <DialogFooter>

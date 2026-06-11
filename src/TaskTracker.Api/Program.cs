@@ -41,6 +41,23 @@ var app = builder.Build();
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<TaskTrackerDbContext>();
+
+    // Older deployments recorded the first migration under its class-name
+    // fallback ID ("InitialCreate"). It now carries an explicit timestamped
+    // ID, so rewrite the history row to keep existing databases in sync.
+    if (db.Database.CanConnect())
+    {
+        try
+        {
+            db.Database.ExecuteSqlRaw(
+                "UPDATE __EFMigrationsHistory SET MigrationId = '20250101000000_InitialCreate' WHERE MigrationId = 'InitialCreate'");
+        }
+        catch (Microsoft.Data.Sqlite.SqliteException)
+        {
+            // History table doesn't exist yet (fresh database) — nothing to fix up.
+        }
+    }
+
     db.Database.Migrate();
 }
 

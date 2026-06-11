@@ -75,6 +75,58 @@ public class TasksController : ControllerBase
     }
 
     /// <summary>
+    /// Add focus time (in seconds) to a task's actual time counter
+    /// </summary>
+    [HttpPost("{id}/log-time")]
+    public async Task<ActionResult<TaskDto>> LogTime(int id, [FromBody] LogTimeDto dto)
+    {
+        var task = await _taskService.LogTimeAsync(id, dto);
+        if (task == null)
+            return NotFound(new { message = "Task not found" });
+
+        return Ok(task);
+    }
+
+    /// <summary>
+    /// Create a subtask under a task
+    /// </summary>
+    [HttpPost("{taskId}/subtasks")]
+    public async Task<ActionResult<SubtaskDto>> CreateSubtask(int taskId, [FromBody] CreateSubtaskDto dto)
+    {
+        var subtask = await _taskService.CreateSubtaskAsync(taskId, dto);
+        if (subtask == null)
+            return NotFound(new { message = "Task not found" });
+
+        return Ok(subtask);
+    }
+
+    /// <summary>
+    /// Update a subtask
+    /// </summary>
+    [HttpPut("/api/subtasks/{id}")]
+    public async Task<ActionResult<SubtaskDto>> UpdateSubtask(int id, [FromBody] UpdateSubtaskDto dto)
+    {
+        var subtask = await _taskService.UpdateSubtaskAsync(id, dto);
+        if (subtask == null)
+            return NotFound(new { message = "Subtask not found" });
+
+        return Ok(subtask);
+    }
+
+    /// <summary>
+    /// Delete a subtask
+    /// </summary>
+    [HttpDelete("/api/subtasks/{id}")]
+    public async Task<ActionResult> DeleteSubtask(int id)
+    {
+        var result = await _taskService.DeleteSubtaskAsync(id);
+        if (!result)
+            return NotFound(new { message = "Subtask not found" });
+
+        return NoContent();
+    }
+
+    /// <summary>
     /// Delete a task
     /// </summary>
     [HttpDelete("{id}")]

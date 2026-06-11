@@ -11,9 +11,12 @@ public class TaskDto
     public string Priority { get; set; } = "Medium";
     public int ProgressPercentage { get; set; }
     public DateTime? DueDate { get; set; }
+    public int? EstimatedMinutes { get; set; }
+    public int ActualSeconds { get; set; }
     public int DisplayOrder { get; set; }
     public DateTime CreatedAt { get; set; }
     public DateTime UpdatedAt { get; set; }
+    public List<SubtaskDto> Subtasks { get; set; } = new();
 }
 
 public class CreateTaskDto
@@ -25,6 +28,7 @@ public class CreateTaskDto
     public string? Priority { get; set; }
     public int? ProgressPercentage { get; set; }
     public DateTime? DueDate { get; set; }
+    public int? EstimatedMinutes { get; set; }
 }
 
 public class UpdateTaskDto
@@ -35,6 +39,11 @@ public class UpdateTaskDto
     public string? Priority { get; set; }
     public int? ProgressPercentage { get; set; }
     public DateTime? DueDate { get; set; }
+    public bool? ClearDueDate { get; set; }
+    public int? EstimatedMinutes { get; set; }
+    public bool? ClearEstimate { get; set; }
 }
 
 public record ReorderTasksDto(List<int> TaskIds);
+
+public record LogTimeDto(int Seconds);

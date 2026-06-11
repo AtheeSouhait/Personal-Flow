@@ -17,6 +17,16 @@ export interface ProjectDetail extends Project {
   ideas: Idea[];
 }
 
+export interface Subtask {
+  id: number;
+  title: string;
+  taskId: number;
+  isCompleted: boolean;
+  displayOrder: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface Task {
   id: number;
   title: string;
@@ -28,6 +38,9 @@ export interface Task {
   progressPercentage: number;
   displayOrder: number;
   dueDate?: string;
+  estimatedMinutes?: number;
+  actualSeconds: number;
+  subtasks: Subtask[];
   createdAt: string;
   updatedAt: string;
 }
@@ -62,6 +75,29 @@ export interface CreateTaskDto {
   priority?: string;
   progressPercentage?: number;
   dueDate?: string;
+  estimatedMinutes?: number;
+}
+
+export interface UpdateTaskDto {
+  title?: string;
+  description?: string;
+  status?: string;
+  priority?: string;
+  progressPercentage?: number;
+  dueDate?: string;
+  clearDueDate?: boolean;
+  estimatedMinutes?: number;
+  clearEstimate?: boolean;
+}
+
+export interface CreateSubtaskDto {
+  title: string;
+}
+
+export interface UpdateSubtaskDto {
+  title?: string;
+  isCompleted?: boolean;
+  displayOrder?: number;
 }
 
 export interface CreateIdeaDto {
@@ -75,6 +111,8 @@ export interface DailyTodo {
   title: string;
   description?: string;
   isCompleted: boolean;
+  isRecurring: boolean;
+  completedAt?: string;
   displayOrder: number;
   createdAt: string;
   updatedAt: string;
@@ -83,12 +121,14 @@ export interface DailyTodo {
 export interface CreateDailyTodoDto {
   title: string;
   description?: string;
+  isRecurring?: boolean;
 }
 
 export interface UpdateDailyTodoDto {
   title?: string;
   description?: string;
   isCompleted?: boolean;
+  isRecurring?: boolean;
   displayOrder?: number;
 }
 

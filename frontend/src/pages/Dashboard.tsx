@@ -9,6 +9,7 @@ import { CheckCircle2, GripVertical, Lightbulb, ListTodo } from 'lucide-react'
 import DailyTodoList from '@/components/DailyTodoList'
 import NextTasks from '@/components/NextTasks'
 import ActivityTracker from '@/components/ActivityTracker'
+import TodayProgress from '@/components/TodayProgress'
 import type { Project } from '@/types'
 
 export default function Dashboard() {
@@ -77,13 +78,14 @@ export default function Dashboard() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
           <h1 className="text-3xl font-bold">Dashboard</h1>
           <p className="text-muted-foreground mt-1">
             Manage your projects and track progress
           </p>
         </div>
+        <TodayProgress />
       </div>
 
       <div className="grid items-start gap-6 2xl:grid-cols-[minmax(360px,1fr)_minmax(320px,0.85fr)_minmax(380px,1fr)] xl:grid-cols-[minmax(340px,1fr)_minmax(300px,0.85fr)_minmax(360px,1fr)]">

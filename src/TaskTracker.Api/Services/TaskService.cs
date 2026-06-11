@@ -16,7 +16,10 @@ public class TaskService : ITaskService
 
     public async Task<IEnumerable<TaskDto>> GetAllTasksAsync(int? projectId = null)
     {
-        var query = _context.Tasks.Include(t => t.Project).AsQueryable();
+        var query = _context.Tasks
+            .Include(t => t.Project)
+            .Include(t => t.Subtasks)
+            .AsQueryable();
 
         if (projectId.HasValue)
             query = query.Where(t => t.ProjectId == projectId.Value);
@@ -32,6 +35,7 @@ public class TaskService : ITaskService
     {
         var task = await _context.Tasks
             .Include(t => t.Project)
+            .Include(t => t.Subtasks)
             .FirstOrDefaultAsync(t => t.Id == id);
 
         return task == null ? null : MapToDto(task);
@@ -53,6 +57,7 @@ public class TaskService : ITaskService
             ProgressPercentage = createDto.ProgressPercentage ?? 0,
             DisplayOrder = maxOrder + 1,
             DueDate = createDto.DueDate,
+            EstimatedMinutes = createDto.EstimatedMinutes,
             CreatedAt = DateTime.UtcNow,
             UpdatedAt = DateTime.UtcNow
         };
@@ -70,6 +75,7 @@ public class TaskService : ITaskService
     {
         var task = await _context.Tasks
             .Include(t => t.Project)
+            .Include(t => t.Subtasks)
             .FirstOrDefaultAsync(t => t.Id == id);
 
         if (task == null)
@@ -90,8 +96,15 @@ public class TaskService : ITaskService
         if (updateDto.ProgressPercentage.HasValue)
             task.ProgressPercentage = Math.Clamp(updateDto.ProgressPercentage.Value, 0, 100);
 
-        if (updateDto.DueDate.HasValue)
+        if (updateDto.ClearDueDate == true)
+            task.DueDate = null;
+        else if (updateDto.DueDate.HasValue)
             task.DueDate = updateDto.DueDate;
+
+        if (updateDto.ClearEstimate == true)
+            task.EstimatedMinutes = null;
+        else if (updateDto.EstimatedMinutes.HasValue)
+            task.EstimatedMinutes = Math.Max(0, updateDto.EstimatedMinutes.Value);
 
         task.UpdatedAt = DateTime.UtcNow;
 
@@ -134,6 +147,95 @@ public class TaskService : ITaskService
         return true;
     }
 
+    public async Task<TaskDto?> LogTimeAsync(int id, LogTimeDto dto)
+    {
+        var task = await _context.Tasks
+            .Include(t => t.Project)
+            .Include(t => t.Subtasks)
+            .FirstOrDefaultAsync(t => t.Id == id);
+
+        if (task == null)
+            return null;
+
+        task.ActualSeconds += Math.Max(0, dto.Seconds);
+        task.UpdatedAt = DateTime.UtcNow;
+
+        await _context.SaveChangesAsync();
+
+        return MapToDto(task);
+    }
+
+    public async Task<SubtaskDto?> CreateSubtaskAsync(int taskId, CreateSubtaskDto dto)
+    {
+        var taskExists = await _context.Tasks.AnyAsync(t => t.Id == taskId);
+        if (!taskExists)
+            return null;
+
+        var maxOrder = await _context.Subtasks.Where(s => s.TaskId == taskId).AnyAsync()
+            ? await _context.Subtasks.Where(s => s.TaskId == taskId).MaxAsync(s => s.DisplayOrder)
+            : -1;
+
+        var subtask = new Subtask
+        {
+            Title = dto.Title,
+            TaskId = taskId,
+            DisplayOrder = maxOrder + 1,
+            CreatedAt = DateTime.UtcNow,
+            UpdatedAt = DateTime.UtcNow
+        };
+
+        _context.Subtasks.Add(subtask);
+        await _context.SaveChangesAsync();
+
+        return MapSubtaskToDto(subtask);
+    }
+
+    public async Task<SubtaskDto?> UpdateSubtaskAsync(int id, UpdateSubtaskDto dto)
+    {
+        var subtask = await _context.Subtasks.FindAsync(id);
+        if (subtask == null)
+            return null;
+
+        if (dto.Title != null)
+            subtask.Title = dto.Title;
+
+        if (dto.IsCompleted.HasValue)
+            subtask.IsCompleted = dto.IsCompleted.Value;
+
+        if (dto.DisplayOrder.HasValue)
+            subtask.DisplayOrder = dto.DisplayOrder.Value;
+
+        subtask.UpdatedAt = DateTime.UtcNow;
+
+        await _context.SaveChangesAsync();
+
+        return MapSubtaskToDto(subtask);
+    }
+
+    public async Task<bool> DeleteSubtaskAsync(int id)
+    {
+        var subtask = await _context.Subtasks.FindAsync(id);
+        if (subtask == null)
+            return false;
+
+        _context.Subtasks.Remove(subtask);
+        await _context.SaveChangesAsync();
+        return true;
+    }
+
+    private static SubtaskDto MapSubtaskToDto(Subtask subtask)
+    {
+        return new SubtaskDto(
+            subtask.Id,
+            subtask.Title,
+            subtask.TaskId,
+            subtask.IsCompleted,
+            subtask.DisplayOrder,
+            subtask.CreatedAt,
+            subtask.UpdatedAt
+        );
+    }
+
     private static TaskDto MapToDto(ProjectTask task)
     {
         return new TaskDto
@@ -148,8 +250,14 @@ public class TaskService : ITaskService
             ProgressPercentage = task.ProgressPercentage,
             DisplayOrder = task.DisplayOrder,
             DueDate = task.DueDate,
+            EstimatedMinutes = task.EstimatedMinutes,
+            ActualSeconds = task.ActualSeconds,
             CreatedAt = task.CreatedAt,
-            UpdatedAt = task.UpdatedAt
+            UpdatedAt = task.UpdatedAt,
+            Subtasks = task.Subtasks
+                .OrderBy(s => s.DisplayOrder).ThenBy(s => s.CreatedAt)
+                .Select(MapSubtaskToDto)
+                .ToList()
         };
     }
 

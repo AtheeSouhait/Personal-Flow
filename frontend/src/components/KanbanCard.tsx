@@ -1,7 +1,8 @@
 import { useRef } from 'react'
 import { Task } from '@/types'
-import { Flag, Calendar } from 'lucide-react'
+import { Flag, Calendar, CheckSquare, Timer } from 'lucide-react'
 import { format } from 'date-fns'
+import { getDueUrgency, urgencyChipClasses, urgencyLabels, formatMinutes } from '@/lib/urgency'
 
 const priorityColors = {
   Low: 'text-gray-400',
@@ -58,6 +59,9 @@ export function KanbanCard({
   const showBeforeGap = dropIndicator?.taskId === task.id && dropIndicator.position === 'before'
   const showAfterGap = dropIndicator?.taskId === task.id && dropIndicator.position === 'after'
   const statusColor = progressBarColors[task.status]
+  const urgency = task.status === 'Completed' ? 'none' : getDueUrgency(task.dueDate)
+  const subtaskDone = task.subtasks?.filter((s) => s.isCompleted).length ?? 0
+  const subtaskTotal = task.subtasks?.length ?? 0
 
   return (
     <div className="relative">
@@ -85,6 +89,8 @@ export function KanbanCard({
           bg-card border rounded-lg overflow-hidden cursor-pointer select-none
           hover:border-primary/50 hover:shadow-sm
           transition-all duration-200 ease-out flex
+          ${urgency === 'overdue' ? 'border-red-500/60 shadow-[0_0_8px_rgba(239,68,68,0.25)]' : ''}
+          ${urgency === 'today' ? 'border-amber-500/60' : ''}
           ${isDragging ? 'opacity-30 scale-[0.97] border-dashed border-primary/40' : ''}
         `}
       >
@@ -119,10 +125,38 @@ export function KanbanCard({
           </div>
         )}
 
-        {task.dueDate && (
-          <div className="flex items-center gap-1 mt-2 text-xs text-muted-foreground">
-            <Calendar className="h-3 w-3" />
-            {format(new Date(task.dueDate), 'MMM d')}
+        {(task.dueDate || subtaskTotal > 0 || task.estimatedMinutes) && (
+          <div className="flex items-center gap-1.5 mt-2 flex-wrap">
+            {task.dueDate && (
+              <span
+                className={`inline-flex items-center gap-1 text-xs px-1.5 py-0.5 rounded ${
+                  urgency === 'none' ? 'text-muted-foreground' : urgencyChipClasses[urgency]
+                }`}
+              >
+                <Calendar className="h-3 w-3" />
+                {urgency !== 'none' && urgencyLabels[urgency]
+                  ? `${urgencyLabels[urgency]} · ${format(new Date(task.dueDate), 'MMM d')}`
+                  : format(new Date(task.dueDate), 'MMM d')}
+              </span>
+            )}
+            {subtaskTotal > 0 && (
+              <span
+                className={`inline-flex items-center gap-1 text-xs px-1.5 py-0.5 rounded ${
+                  subtaskDone === subtaskTotal
+                    ? 'text-green-600 dark:text-green-400'
+                    : 'text-muted-foreground'
+                }`}
+              >
+                <CheckSquare className="h-3 w-3" />
+                {subtaskDone}/{subtaskTotal}
+              </span>
+            )}
+            {task.estimatedMinutes ? (
+              <span className="inline-flex items-center gap-1 text-xs px-1.5 py-0.5 rounded text-muted-foreground">
+                <Timer className="h-3 w-3" />
+                {formatMinutes(task.estimatedMinutes)}
+              </span>
+            ) : null}
           </div>
         )}
         </div>

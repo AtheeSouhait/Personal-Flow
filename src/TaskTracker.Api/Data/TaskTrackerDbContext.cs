@@ -14,6 +14,7 @@ public class TaskTrackerDbContext : DbContext
     public DbSet<ProjectTask> Tasks { get; set; } = null!;
     public DbSet<Idea> Ideas { get; set; } = null!;
     public DbSet<DailyTodo> DailyTodos { get; set; } = null!;
+    public DbSet<Subtask> Subtasks { get; set; } = null!;
     public DbSet<Activity> Activities { get; set; } = null!;
     public DbSet<ActivityLog> ActivityLogs { get; set; } = null!;
 
@@ -61,6 +62,24 @@ public class TaskTrackerDbContext : DbContext
             entity.HasIndex(e => e.ProjectId);
             entity.HasIndex(e => e.Status);
             entity.HasIndex(e => e.DueDate);
+
+            entity.HasMany(e => e.Subtasks)
+                .WithOne(e => e.Task)
+                .HasForeignKey(e => e.TaskId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        // Subtask configuration
+        modelBuilder.Entity<Subtask>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.Title).IsRequired().HasMaxLength(200);
+            entity.Property(e => e.IsCompleted).IsRequired();
+            entity.Property(e => e.DisplayOrder).IsRequired();
+            entity.Property(e => e.CreatedAt).IsRequired();
+            entity.Property(e => e.UpdatedAt).IsRequired();
+
+            entity.HasIndex(e => e.TaskId);
         });
 
         // Idea configuration

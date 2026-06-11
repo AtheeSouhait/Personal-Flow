@@ -41,6 +41,7 @@ public class DailyTodoService : IDailyTodoService
         {
             Title = dto.Title,
             Description = dto.Description,
+            IsRecurring = dto.IsRecurring ?? false,
             DisplayOrder = maxOrder + 1,
             CreatedAt = DateTime.UtcNow,
             UpdatedAt = DateTime.UtcNow
@@ -64,8 +65,14 @@ public class DailyTodoService : IDailyTodoService
         if (dto.Description != null)
             todo.Description = dto.Description;
 
-        if (dto.IsCompleted.HasValue)
+        if (dto.IsCompleted.HasValue && dto.IsCompleted.Value != todo.IsCompleted)
+        {
             todo.IsCompleted = dto.IsCompleted.Value;
+            todo.CompletedAt = dto.IsCompleted.Value ? DateTime.UtcNow : null;
+        }
+
+        if (dto.IsRecurring.HasValue)
+            todo.IsRecurring = dto.IsRecurring.Value;
 
         if (dto.DisplayOrder.HasValue)
             todo.DisplayOrder = dto.DisplayOrder.Value;
@@ -119,6 +126,8 @@ public class DailyTodoService : IDailyTodoService
             todo.Title,
             todo.Description,
             todo.IsCompleted,
+            todo.IsRecurring,
+            todo.CompletedAt,
             todo.DisplayOrder,
             todo.CreatedAt,
             todo.UpdatedAt

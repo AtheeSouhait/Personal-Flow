@@ -1,11 +1,13 @@
-import { ReactNode, useState } from 'react'
+import { ReactNode, useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Search, Plus } from 'lucide-react'
+import { Search, Plus, Crosshair, Zap, AlertCircle } from 'lucide-react'
 import { Input } from './ui/input'
 import { Button } from './ui/button'
 import { CreateProjectDialog } from './CreateProjectDialog'
+import { QuickCapture } from './QuickCapture'
 import { useQuery } from '@tanstack/react-query'
 import { searchApi } from '@/api/search'
+import { useDueReminders } from '@/hooks/useDueReminders'
 
 interface LayoutProps {
   children: ReactNode
@@ -14,6 +16,20 @@ interface LayoutProps {
 export default function Layout({ children }: LayoutProps) {
   const [searchQuery, setSearchQuery] = useState('')
   const [showCreateProject, setShowCreateProject] = useState(false)
+  const [showQuickCapture, setShowQuickCapture] = useState(false)
+  const urgentTasks = useDueReminders()
+
+  // Ctrl+K / Cmd+K opens quick capture from anywhere
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault()
+        setShowQuickCapture(true)
+      }
+    }
+    window.addEventListener('keydown', handler)
+    return () => window.removeEventListener('keydown', handler)
+  }, [])
 
   const { data: searchResults } = useQuery({
     queryKey: ['search', searchQuery],
@@ -125,10 +141,36 @@ export default function Layout({ children }: LayoutProps) {
               )}
             </div>
 
-            <Button onClick={() => setShowCreateProject(true)}>
-              <Plus className="h-4 w-4 mr-2" />
-              New Project
-            </Button>
+            <div className="flex items-center gap-2">
+              {urgentTasks.length > 0 && (
+                <span
+                  className="inline-flex items-center gap-1 text-xs font-semibold px-2 py-1 rounded-full bg-red-500/10 text-red-600 border border-red-500/30"
+                  title={urgentTasks.map((t) => t.title).join('\n')}
+                >
+                  <AlertCircle className="h-3.5 w-3.5" />
+                  {urgentTasks.length} due
+                </span>
+              )}
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowQuickCapture(true)}
+                title="Quick capture (Ctrl+K)"
+              >
+                <Zap className="h-4 w-4 mr-1 text-amber-500" />
+                Capture
+              </Button>
+              <Link to="/focus">
+                <Button variant="outline" size="sm" title="Focus on one thing">
+                  <Crosshair className="h-4 w-4 mr-1" />
+                  Focus
+                </Button>
+              </Link>
+              <Button onClick={() => setShowCreateProject(true)}>
+                <Plus className="h-4 w-4 mr-2" />
+                New Project
+              </Button>
+            </div>
           </div>
         </div>
       </header>
@@ -139,6 +181,8 @@ export default function Layout({ children }: LayoutProps) {
         open={showCreateProject}
         onOpenChange={setShowCreateProject}
       />
+
+      <QuickCapture open={showQuickCapture} onOpenChange={setShowQuickCapture} />
     </div>
   )
 }

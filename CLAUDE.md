@@ -95,9 +95,21 @@ Vite serves at http://localhost:5173 and proxies `/api` to `http://localhost:312
 ### Domain model (current)
 
 - `Project` (`ProjectStatus`: `Active | Completed | Archived`)
-- `ProjectTask` (`TaskStatus`: `NotStarted | InProgress | Completed | Blocked`, `TaskPriority`: `Low | Medium | High | Critical`)
+- `ProjectTask` (`TaskStatus`: `NotStarted | InProgress | Completed | Blocked`, `TaskPriority`: `Low | Medium | High | Critical`; also `EstimatedMinutes?`, `ActualSeconds`, `DueDate?`)
+- `Subtask` (checklist step under a task: `Title`, `IsCompleted`, `DisplayOrder`)
 - `Idea`
-- `DailyTodo`
+- `DailyTodo` (`IsRecurring` for daily-repeat items, `CompletedAt`)
+
+### ADHD-focused features (v3)
+
+- Due-date urgency colors on task cards (overdue/today/soon) + once-a-day browser notification for due tasks
+- Subtask checklists in the task dialog (`SubtaskList`), counts on cards
+- Time estimate vs actual focused time (Pomodoro sessions are logged via `log-time`)
+- Morning triage dialog for the Daily ToDo list (archive done, reset recurring, keep/drop leftovers)
+- Completion celebrations + daily streak (`CelebrationContext`, localStorage)
+- Focus mode (`/focus`): one task at a time with a Pomodoro
+- Quick capture (Ctrl+K) to Daily ToDo or a project's ideas
+- Soft WIP limit warning on the In Progress Kanban column
 
 ### API endpoints (current)
 
@@ -118,6 +130,12 @@ Base URL: `http://localhost:3124/api`
   - `PUT /api/tasks/{id}`
   - `DELETE /api/tasks/{id}`
   - `POST /api/tasks/reorder` (`{ taskIds: number[] }`)
+  - `POST /api/tasks/{id}/log-time` (`{ seconds: number }`, accumulates `actualSeconds`)
+
+- **Subtasks**
+  - `POST /api/tasks/{taskId}/subtasks` (`{ title }`)
+  - `PUT /api/subtasks/{id}` (`{ title?, isCompleted?, displayOrder? }`)
+  - `DELETE /api/subtasks/{id}`
 
 - **Ideas**
   - `GET /api/ideas?projectId={id?}`
